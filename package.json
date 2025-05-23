@@ -1,0 +1,31 @@
+{
+  "name": "med-sys",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/kxtukI/med.sys",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "body-parser": "^2.2.0",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "nodemon": "^3.1.10",
+    "sequelize": "^6.37.7",
+    "sucrase": "^3.35.0",
+    "youch": "^3.3.4",
+    "yup": "^1.6.1"
+  },
+  "scripts": {
+    "dev": "nodemon ./src/server.js"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.32.1",
+    "@typescript-eslint/parser": "^8.32.1",
+    "eslint": "^9.27.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-prettier": "^5.4.0",
+    "prettier": "^3.5.3",
+    "sequelize-cli": "^6.6.3"
+  }
+}
