@@ -2,3 +2,4 @@ node_modules/
 dist/
 .eslint.config.js
 .prettierrc
+.env

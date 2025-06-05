@@ -3,54 +3,45 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('pacientes', {
+    await queryInterface.createTable('professionals', {
       id: {
         type: Sequelize.INTEGER,
-        allowNull: false,
         autoIncrement: true,
         primaryKey: true,
       },
-      usuario_id: {
+      user_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: { model: 'usuarios', key: 'id' },
+        references: { model: 'users', key: 'id' },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
       },
-      numero_sus: {
+      professional_register: {
         type: Sequelize.STRING,
-        allowNull: true,
-        unique: true,
-      },
-      cpf: {
-        type: Sequelize.STRING(11),
         allowNull: false,
         unique: true,
       },
-      data_nascimento: {
-        type: Sequelize.DATEONLY,
+      professional_type: {
+        type: Sequelize.ENUM('doctor', 'administrative'),
         allowNull: false,
       },
-      endereco: {
+      specialty: {
         type: Sequelize.STRING,
         allowNull: true,
       },
-      cidade: {
+      photo_url: {
         type: Sequelize.STRING,
         allowNull: true,
       },
-      estado: {
-        type: Sequelize.STRING(2),
-        allowNull: true,
-      },
-      cep: {
-        type: Sequelize.STRING(8),
-        allowNull: true,
+      status: {
+        type: Sequelize.ENUM('active', 'inactive'),
+        allowNull: false,
+        defaultValue: 'active',
       },
     });
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('pacientes');
+    await queryInterface.dropTable('professionals');
   },
 };

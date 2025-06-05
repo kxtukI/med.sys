@@ -3,57 +3,39 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('consultas', {
+    await queryInterface.createTable('medication_inventory', {
       id: {
         type: Sequelize.INTEGER,
         autoIncrement: true,
         primaryKey: true,
       },
-      paciente_id: {
+      medication_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'pacientes',
+          model: 'medications',
           key: 'id',
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
       },
-      profissional_id: {
+      health_unit_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'profissionais',
+          model: 'health_units',
           key: 'id',
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
-      },
-      unidade_saude_id: {
+      },  
+      available_quantity: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: {
-          model: 'unidades_saude',
-          key: 'id',
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE',
+        defaultValue: 0,
       },
-      data_hora: {
+      update_date: {
         type: Sequelize.DATE,
-        allowNull: false,
-      },
-      especialidade: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
-      status: {
-        type: Sequelize.ENUM('agendada', 'cancelada', 'realizada'),
-        allowNull: false,
-        defaultValue: 'agendada',
-      },
-      data_agendamento: {
-        type: Sequelize.TIME,
         allowNull: false,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
       },
@@ -61,6 +43,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('consultas');
+    await queryInterface.dropTable('medication_inventory');
   },
 };

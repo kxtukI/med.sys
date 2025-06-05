@@ -3,37 +3,37 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('unidades_saude', {
+    await queryInterface.createTable('health_units', {
       id: {
         type: Sequelize.INTEGER,
         autoIncrement: true,
         primaryKey: true,
       },
-      nome: {
+      name: {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      endereco: {
+      address: {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      cidade: {
+      city: {
         type: Sequelize.STRING,
         allowNull: false,
       },  
-      estado: {
+      state: {
         type: Sequelize.STRING(2),
         allowNull: false,
       },
-      cep: {
+      zip_code: {
         type: Sequelize.STRING(8),
         allowNull: false,
       },
-      telefone: {
+      phone: {
         type: Sequelize.STRING,
         allowNull: true,
       },
-      horario_funcionamento: {
+      working_hours: {
         type: Sequelize.STRING,
         allowNull: true,
       },
@@ -41,6 +41,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('unidades_saude');
+    await queryInterface.dropTable('health_units');
   },
 };

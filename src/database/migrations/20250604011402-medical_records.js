@@ -3,46 +3,65 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('estoque_medicamentos', {
+    await queryInterface.createTable('medical_records', {
       id: {
         type: Sequelize.INTEGER,
         autoIncrement: true,
         primaryKey: true,
       },
-      medicamento_id: {
+      professional_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'medicamentos',
+          model: 'professionals',
           key: 'id',
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
       },
-      unidade_saude_id: {
+      appointment_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'unidades_saude',
+          model: 'appointments',
           key: 'id',
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
-      },  
-      quantidade_disponivel: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        defaultValue: 0,
       },
-      data_atualizacao: {
+      record_date: {
         type: Sequelize.DATE,
         allowNull: false,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+      },
+      observations: {
+        type: Sequelize.TEXT,
+        allowNull: true,
+      },
+      prescribed_medications: {
+        type: Sequelize.TEXT,
+        allowNull: true,
+      },
+      requested_exams: {
+        type: Sequelize.TEXT,
+        allowNull: true,
+      }, 
+      disease_history: {
+        type: Sequelize.TEXT,
+        allowNull: true,
+      },
+      allergies: {
+        type: Sequelize.TEXT,
+        allowNull: true,
+      },
+      treatment_plan: {
+        type: Sequelize.TEXT,
+        allowNull: true,
       },
     });
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('estoque_medicamentos');
+    await queryInterface.dropTable('medical_records');
   },
 };

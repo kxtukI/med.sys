@@ -3,37 +3,37 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('medicamentos', {
+    await queryInterface.createTable('medications', {
       id: {
         type: Sequelize.INTEGER,
         autoIncrement: true,
         primaryKey: true,
       },
-      nome: {
+      name: {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      principio_ativo: {
+      active_ingredient: {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      categoria: {
+      category: {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      descricao: {
+      description: {
         type: Sequelize.TEXT,
         allowNull: true,
       },
-      posologia: {
+      dosage: {
         type: Sequelize.STRING,
         allowNull: true,
       },
-      contraindicacoes: {
+      contraindications: {
         type: Sequelize.TEXT,
         allowNull: true,
       },
-      fabricante: {
+      manufacturer: {
         type: Sequelize.STRING,
         allowNull: true,
       },
@@ -41,6 +41,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('medicamentos');
+    await queryInterface.dropTable('medications');
   },
 };
