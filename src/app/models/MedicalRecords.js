@@ -32,7 +32,7 @@ class MedicalRecords extends Model {
       record_date: {
         type: DataTypes.DATE,
         allowNull: false,
-        defaultValue: DataTypes.literal('CURRENT_TIMESTAMP'),
+        defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
       },
       observations: {
         type: DataTypes.TEXT,

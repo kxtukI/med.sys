@@ -3,6 +3,7 @@ import express from 'express';
 import Youch from 'youch';
 
 import routes from './routes.js';
+import './database/index.js';
 
 class App {
   constructor() {

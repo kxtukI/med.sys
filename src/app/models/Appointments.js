@@ -55,7 +55,7 @@ class Appointments extends Model {
         schedule_date: {
           type: DataTypes.TIME,
           allowNull: false,
-          defaultValue: DataTypes.literal('CURRENT_TIMESTAMP'),
+          defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
         },
       },
       {

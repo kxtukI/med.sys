@@ -56,11 +56,11 @@ class Patients extends Model {
     );
   }
 
-    static associate(models) {
-        this.belongsTo(models.Users, { foreignKey: 'user_id', as: 'users' });
-        this.hasMany(models.Appointments, { foreignKey: 'patient_id', as: 'appointments' });
-        this.hasMany(models.MedicalRecords, { foreignKey: 'patient_id', as: 'medicalRecords' });
-    }
+  static associate(models) {
+    this.belongsTo(models.Users, { foreignKey: 'user_id', as: 'users' });
+    this.hasMany(models.Appointments, { foreignKey: 'patient_id', as: 'appointments' });
+    this.hasMany(models.MedicalRecords, { foreignKey: 'patient_id', as: 'medicalRecords' });
+  }
 }
 
 export default Patients;
