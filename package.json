@@ -22,7 +22,8 @@
   },
   "scripts": {
     "dev": "nodemon ./src/server.js",
-    "start": "node ./src/server.js"
+    "start": "node ./src/server.js",
+    "deploy": "npm install && npm run migrate && npm start"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.32.1",
