@@ -2,6 +2,7 @@
   "name": "med-sys",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "repository": "https://github.com/kxtukI/med.sys",
   "license": "MIT",
   "dependencies": {

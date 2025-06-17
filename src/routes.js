@@ -1,7 +1,7 @@
 import paginationMiddleware from './app/middlewares/paginationMiddleware.js';
 import { Router } from 'express';
 
-import PatientsControllers from './app/controllers/PatientsControllers';
+import PatientsControllers from './app/controllers/PatientsControllers.js';
 
 const routes = new Router();
 
