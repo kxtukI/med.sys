@@ -20,7 +20,8 @@
     "yup": "^1.6.1"
   },
   "scripts": {
-    "dev": "nodemon ./src/server.js"
+    "dev": "nodemon ./src/server.js",
+    "start": "node ./src/server.js"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.32.1",

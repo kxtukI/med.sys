@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import Sequelize from 'sequelize';
 import config from '../config/database.js';
 
@@ -23,11 +24,26 @@ const models = [
 
 class Database {
   constructor() {
-    this.connection = new Sequelize(config.database, config.username, config.password, {
-      host: config.host,
-      dialect: config.dialect,
-      define: config.define,
-    });
+    if (process.env.NODE_ENV === 'production') {
+      this.connection = new Sequelize(process.env.DATABASE_URL, {
+        dialect: 'postgres',
+        logging: false,
+        dialectOptions: {
+          ssl: {
+            require: true,
+            rejectUnauthorized: false
+          }
+        },
+        define: config.define,
+      });
+    } else {
+      this.connection = new Sequelize(config.database, config.username, config.password, {
+        host: config.host,
+        dialect: config.dialect,
+        define: config.define,
+      });
+    }
+
     this.init();
     this.associate();
   }
