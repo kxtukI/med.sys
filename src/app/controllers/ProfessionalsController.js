@@ -95,7 +95,7 @@ class ProfessionalsController {
       phone: Yup.string().required('Telefone é obrigatório').matches(/^[0-9]{10,11}$/, 'Telefone deve ter 10 ou 11 dígitos'),
       password: Yup.string().required('Senha é obrigatória').min(8, 'Senha deve ter no mínimo 8 caracteres'),
       professional_register: Yup.string().required('Registro profissional é obrigatório'),
-      professional_type: Yup.string().oneOf(['doctor', 'administrative']).required('Tipo é obrigatório'),
+      professional_type: Yup.string().oneOf(['doctor', 'administrative']).required('Tipo de profissional é obrigatório'),
       specialty: Yup.string().nullable(),
       health_unit_id: Yup.number().nullable(),
       photo_url: Yup.string().nullable(),
@@ -108,13 +108,11 @@ class ProfessionalsController {
 
     const { name, email, phone, password, professional_register, professional_type, specialty, health_unit_id, photo_url } = req.body;
 
-    // Verifica se já existe registro profissional
     const existingProfessional = await Professionals.findOne({ where: { professional_register } });
     if (existingProfessional) {
       return res.status(400).json({ error: 'Registro profissional já cadastrado.' });
     }
 
-    // Cria usuário
     const user = await User.create({
       name,
       email,
@@ -123,7 +121,6 @@ class ProfessionalsController {
       user_type: 'professional',
     });
 
-    // Cria profissional
     const professional = await Professionals.create({
       user_id: user.id,
       professional_register,
