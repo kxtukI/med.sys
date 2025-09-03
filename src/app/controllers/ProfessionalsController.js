@@ -90,12 +90,31 @@ class ProfessionalsController {
 
   async create(req, res) {
     const schema = Yup.object().shape({
-      name: Yup.string().required('Nome é obrigatório').min(3, 'Nome deve ter no mínimo 3 caracteres'),
+      name: Yup.string()
+        .required('Nome é obrigatório')
+        .min(3, 'Nome deve ter no mínimo 3 caracteres')
+        .matches(/^[\p{L}\p{M}\s'.-]+$/u, 'Nome não pode conter números ou caracteres especiais	'),
+
       email: Yup.string().email('Email inválido').required('Email é obrigatório'),
-      phone: Yup.string().required('Telefone é obrigatório').matches(/^[0-9]{10,11}$/, 'Telefone deve ter 10 ou 11 dígitos'),
-      password: Yup.string().required('Senha é obrigatória').min(8, 'Senha deve ter no mínimo 8 caracteres'),
+
+      phone: Yup.string()
+        .required('Telefone é obrigatório')
+        .matches(/^\d{10,11}$/, 'Telefone deve ter 10 ou 11 dígitos'),
+
+      password: Yup.string()
+        .required('Senha é obrigatória')
+        .min(8, 'Senha deve ter no mínimo 8 caracteres')
+        .matches(
+          /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]{8,}$/,
+          'Senha deve conter pelo menos uma letra e um número'
+        ),
+
       professional_register: Yup.string().required('Registro profissional é obrigatório'),
-      professional_type: Yup.string().oneOf(['doctor', 'administrative']).required('Tipo de profissional é obrigatório'),
+
+      professional_type: Yup.string()
+        .oneOf(['doctor', 'administrative'])
+        .required('Tipo de profissional é obrigatório'),
+
       specialty: Yup.string().nullable(),
       health_unit_id: Yup.number().nullable(),
       photo_url: Yup.string().nullable(),
@@ -148,16 +167,37 @@ class ProfessionalsController {
 
   async update(req, res) {
     const schema = Yup.object().shape({
-      name: Yup.string().optional().min(3, 'Nome deve ter no mínimo 3 caracteres'),
-      email: Yup.string().optional().email('Email inválido'),
-      phone: Yup.string().optional().matches(/^[0-9]{10,11}$/, 'Telefone deve ter 10 ou 11 dígitos'),
-      password: Yup.string().optional().min(8, 'Senha deve ter no mínimo 8 caracteres'),
+      name: Yup.string()
+        .required('Nome é obrigatório')
+        .min(3, 'Nome deve ter no mínimo 3 caracteres')
+        .matches(/^[\p{L}\p{M}\s'.-]+$/u, 'Nome não pode conter números ou caracteres especiais	'),
+
+      email: Yup.string().email('Email inválido').required('Email é obrigatório'),
+
+      phone: Yup.string()
+        .required('Telefone é obrigatório')
+        .matches(/^\d{10,11}$/, 'Telefone deve ter 10 ou 11 dígitos'),
+
+      password: Yup.string()
+        .required('Senha é obrigatória')
+        .min(8, 'Senha deve ter no mínimo 8 caracteres')
+        .matches(
+          /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]{8,}$/,
+          'Senha deve conter pelo menos uma letra e um número'
+        ),
+
       professional_register: Yup.string().optional(),
-      professional_type: Yup.string().oneOf(['doctor', 'administrative']).optional(),
+      professional_type: Yup.string()
+        .oneOf(['doctor', 'administrative'])
+        .optional(),
+
       specialty: Yup.string().optional(),
       health_unit_id: Yup.number().optional(),
       photo_url: Yup.string().optional(),
-      status: Yup.string().oneOf(['active', 'inactive']).optional(),
+      
+      status: Yup.string()
+      .oneOf(['active', 'inactive'])
+      .optional(),
     });
 
     if (!(await schema.isValid(req.body))) {
