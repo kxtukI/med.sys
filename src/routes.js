@@ -4,6 +4,7 @@ import { Router } from 'express';
 import PatientsControllers from './app/controllers/PatientsControllers.js';
 import ProfessionalsController from './app/controllers/ProfessionalsController.js';
 import HealthUnitsController from './app/controllers/HealthUnitsController.js';
+import MedicationsController from './app/controllers/MedicationsController.js';
 
 const routes = new Router();
 
@@ -24,5 +25,11 @@ routes.get('/health_units/:id', HealthUnitsController.show);
 routes.post('/health_units', HealthUnitsController.create);
 routes.put('/health_units/:id', HealthUnitsController.update);
 routes.delete('/health_units/:id', HealthUnitsController.delete);
+
+routes.get('/medications', paginationMiddleware, MedicationsController.index);
+routes.get('/medications/:id', MedicationsController.show);
+routes.post('/medications', MedicationsController.create);
+routes.put('/medications/:id', MedicationsController.update);
+routes.delete('/medications/:id', MedicationsController.delete);
 
 export default routes;
