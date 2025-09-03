@@ -91,7 +91,7 @@ class PatientsController {
       name: Yup.string()
         .required('Nome é obrigatório')
         .min(3, 'Nome deve ter no mínimo 3 caracteres')
-        .matches(/^[a-zA-Z\s]+$/, 'Nome deve conter apenas letras'),
+        .matches(/^[\p{L}\p{M}\s'.-]+$/u, 'Nome não pode conter números ou caracteres especiais	'),
 
       cpf: Yup.string()
         .required('CPF é obrigatório')
@@ -133,9 +133,16 @@ class PatientsController {
         .required('Senha é obrigatória')
         .min(8, 'Senha deve ter no mínimo 8 caracteres')
         .matches(
-          /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/,
+          /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]{8,}$/,
           'Senha deve conter pelo menos uma letra e um número'
         ),
+
+      address: Yup.string().optional(),
+      city: Yup.string().optional(),
+      state: Yup.string().optional(),
+      zip_code: Yup.string(8, 'O CEP deve ter 8 dígitos')
+        .optional()
+        .matches(/^\d+$/, 'O CEP deve conter apenas números'),
     });
 
     if (!(await schema.isValid(req.body))) {
