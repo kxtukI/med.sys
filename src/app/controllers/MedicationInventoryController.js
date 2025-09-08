@@ -10,15 +10,9 @@ class MedicationInventoryController {
     const { limit, offset } = req.pagination;
 
     const where = {};
-    if (medication_id) {
-      where.medication_id = medication_id;
-    }
-    if (health_unit_id) {
-      where.health_unit_id = health_unit_id;
-    }
-    if (available_quantity) {
-      where.available_quantity = { [Op.gte]: parseInt(available_quantity) };
-    }
+    if (medication_id) where.medication_id = medication_id;
+    if (health_unit_id) where.health_unit_id = health_unit_id;
+    if (available_quantity) where.available_quantity = { [Op.gte]: parseInt(available_quantity) };
 
     const data = await MedicationInventory.findAndCountAll({
       where,
@@ -82,24 +76,18 @@ class MedicationInventoryController {
     }
 
     const { medication_id, health_unit_id, available_quantity } = req.body;
-
     const medication = await Medication.findByPk(medication_id);
     if (!medication) {
       return res.status(400).json({ error: 'Medicamento não encontrado' });
     }
-
     const healthUnit = await HealthUnit.findByPk(health_unit_id);
     if (!healthUnit) {
       return res.status(400).json({ error: 'Unidade de saúde não encontrada' });
     }
-
-    const existingInventory = await MedicationInventory.findOne({
-      where: { medication_id, health_unit_id },
-    });
+    const existingInventory = await MedicationInventory.findOne({ where: { medication_id, health_unit_id } });
     if (existingInventory) {
       return res.status(400).json({ error: 'Já existe um registro para este medicamento nesta unidade de saúde' });
     }
-
     const inventory = await MedicationInventory.create({ medication_id, health_unit_id, available_quantity });
     return res.json({ inventory });
   }
@@ -116,12 +104,10 @@ class MedicationInventoryController {
 
     const { id } = req.params;
     const { available_quantity } = req.body;
-
     const inventory = await MedicationInventory.findByPk(id);
     if (!inventory) {
       return res.status(404).json({ error: 'Medicamento não disponível no estoque' });
     }
-
     await inventory.update({ available_quantity });
     return res.json({ inventory });
   }

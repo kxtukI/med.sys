@@ -8,15 +8,9 @@ class MedicationsController {
     const { limit, offset } = req.pagination;
 
     const where = {};
-    if (name) {
-      where.name = { [Op.iLike]: `%${name}%` };
-    }
-    if (category) {
-      where.category = { [Op.iLike]: `%${category}%` };
-    }
-    if (active_ingredient) {
-      where.active_ingredient = { [Op.iLike]: `%${active_ingredient}%` };
-    }
+    if (name) where.name = { [Op.iLike]: `%${name}%` };
+    if (category) where.category = { [Op.iLike]: `%${category}%` };
+    if (active_ingredient) where.active_ingredient = { [Op.iLike]: `%${active_ingredient}%` };
 
     const data = await Medication.findAndCountAll({
       where,

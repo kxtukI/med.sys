@@ -8,15 +8,9 @@ class HealthUnitsController {
     const { limit, offset } = req.pagination;
 
     const where = {};
-    if (name) {
-      where.name = { [Op.iLike]: `%${name}%` };
-    }
-    if (city) {
-      where.city = { [Op.iLike]: `%${city}%` };
-    }
-    if (state) {
-      where.state = { [Op.iLike]: `%${state}%` };
-    }
+    if (name) where.name = { [Op.iLike]: `%${name}%` };
+    if (city) where.city = { [Op.iLike]: `%${city}%` };
+    if (state) where.state = { [Op.iLike]: `%${state}%` };
 
     const data = await HealthUnit.findAndCountAll({
       where,

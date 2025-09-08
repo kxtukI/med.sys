@@ -1,6 +1,5 @@
 import { Op } from 'sequelize';
 import * as Yup from 'yup';
-import { formatDateOnlyToDisplay } from '../utils/dateUtils.js';
 import Professionals from '../models/Professionals.js';
 import User from '../models/Users.js';
 import HealthUnit from '../models/HealthUnits.js';
@@ -12,22 +11,11 @@ class ProfessionalsController {
 
     const where = {};
     const userWhere = {};
-
-    if (name) {
-      userWhere.name = { [Op.iLike]: `%${name}%` };
-    }
-    if (professional_register) {
-      where.professional_register = { [Op.iLike]: `%${professional_register}%` };
-    }
-    if (professional_type) {
-      where.professional_type = professional_type;
-    }
-    if (specialty) {
-      where.specialty = { [Op.iLike]: `%${specialty}%` };
-    }
-    if (status) {
-      where.status = status;
-    }
+    if (name) userWhere.name = { [Op.iLike]: `%${name}%` };
+    if (professional_register) where.professional_register = { [Op.iLike]: `%${professional_register}%` };
+    if (professional_type) where.professional_type = professional_type;
+    if (specialty) where.specialty = { [Op.iLike]: `%${specialty}%` };
+    if (status) where.status = status;
 
     const data = await Professionals.findAndCountAll({
       where,
@@ -37,13 +25,13 @@ class ProfessionalsController {
           as: 'user',
           attributes: ['id', 'name', 'email', 'user_type', 'active'],
           where: userWhere,
-          required: true
+          required: true,
         },
         {
           model: HealthUnit,
           as: 'health_unit',
           attributes: ['id', 'name', 'city', 'state'],
-        }
+        },
       ],
       order: [
         [{ model: User, as: 'user' }, 'active', 'DESC'],
@@ -90,31 +78,12 @@ class ProfessionalsController {
 
   async create(req, res) {
     const schema = Yup.object().shape({
-      name: Yup.string()
-        .required('Nome é obrigatório')
-        .min(3, 'Nome deve ter no mínimo 3 caracteres')
-        .matches(/^[\p{L}\p{M}\s'.-]+$/u, 'Nome não pode conter números ou caracteres especiais	'),
-
+      name: Yup.string().required('Nome é obrigatório').min(3, 'Nome deve ter no mínimo 3 caracteres').matches(/^[\p{L}\p{M}\s'.-]+$/u, 'Nome deve conter apenas letras, espaços e alguns caracteres especiais'),
       email: Yup.string().email('Email inválido').required('Email é obrigatório'),
-
-      phone: Yup.string()
-        .required('Telefone é obrigatório')
-        .matches(/^\d{10,11}$/, 'Telefone deve ter 10 ou 11 dígitos'),
-
-      password: Yup.string()
-        .required('Senha é obrigatória')
-        .min(8, 'Senha deve ter no mínimo 8 caracteres')
-        .matches(
-          /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]{8,}$/,
-          'Senha deve conter pelo menos uma letra e um número'
-        ),
-
+      phone: Yup.string().required('Telefone é obrigatório').matches(/^\d{10,11}$/, 'Telefone deve ter 10 ou 11 dígitos'),
+      password: Yup.string().required('Senha é obrigatória').min(8, 'Senha deve ter no mínimo 8 caracteres').matches(/^(?=.*[A-Za-z])(?=.*\d)\S{8,}$/, 'Senha deve conter pelo menos uma letra e um número'),
       professional_register: Yup.string().required('Registro profissional é obrigatório'),
-
-      professional_type: Yup.string()
-        .oneOf(['doctor', 'administrative'])
-        .required('Tipo de profissional é obrigatório'),
-
+      professional_type: Yup.string().oneOf(['doctor', 'administrative']).required('Tipo é obrigatório'),
       specialty: Yup.string().nullable(),
       health_unit_id: Yup.number().nullable(),
       photo_url: Yup.string().nullable(),
@@ -132,22 +101,8 @@ class ProfessionalsController {
       return res.status(400).json({ error: 'Registro profissional já cadastrado.' });
     }
 
-    const user = await User.create({
-      name,
-      email,
-      phone,
-      password,
-      user_type: 'professional',
-    });
-
-    const professional = await Professionals.create({
-      user_id: user.id,
-      professional_register,
-      professional_type,
-      specialty,
-      health_unit_id,
-      photo_url,
-    });
+    const user = await User.create({ name, email, phone, password, user_type: 'professional' });
+    const professional = await Professionals.create({ user_id: user.id, professional_register, professional_type, specialty, health_unit_id, photo_url });
 
     return res.json({
       professional: {
@@ -167,37 +122,16 @@ class ProfessionalsController {
 
   async update(req, res) {
     const schema = Yup.object().shape({
-      name: Yup.string()
-        .required('Nome é obrigatório')
-        .min(3, 'Nome deve ter no mínimo 3 caracteres')
-        .matches(/^[\p{L}\p{M}\s'.-]+$/u, 'Nome não pode conter números ou caracteres especiais	'),
-
-      email: Yup.string().email('Email inválido').required('Email é obrigatório'),
-
-      phone: Yup.string()
-        .required('Telefone é obrigatório')
-        .matches(/^\d{10,11}$/, 'Telefone deve ter 10 ou 11 dígitos'),
-
-      password: Yup.string()
-        .required('Senha é obrigatória')
-        .min(8, 'Senha deve ter no mínimo 8 caracteres')
-        .matches(
-          /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]{8,}$/,
-          'Senha deve conter pelo menos uma letra e um número'
-        ),
-
+      name: Yup.string().optional().min(3, 'Nome deve ter no mínimo 3 caracteres').matches(/^[\p{L}\p{M}\s'.-]+$/u, 'Nome deve conter apenas letras, espaços e alguns caracteres especiais'),
+      email: Yup.string().optional().email('Email inválido'),
+      phone: Yup.string().optional().matches(/^\d{10,11}$/, 'Telefone deve ter 10 ou 11 dígitos'),
+      password: Yup.string().optional().min(8, 'Senha deve ter no mínimo 8 caracteres').matches(/^(?=.*[A-Za-z])(?=.*\d)\S{8,}$/, 'Senha deve conter pelo menos uma letra e um número'),
       professional_register: Yup.string().optional(),
-      professional_type: Yup.string()
-        .oneOf(['doctor', 'administrative'])
-        .optional(),
-
+      professional_type: Yup.string().oneOf(['doctor', 'administrative']).optional(),
       specialty: Yup.string().optional(),
       health_unit_id: Yup.number().optional(),
       photo_url: Yup.string().optional(),
-      
-      status: Yup.string()
-      .oneOf(['active', 'inactive'])
-      .optional(),
+      status: Yup.string().oneOf(['active', 'inactive']).optional(),
     });
 
     if (!(await schema.isValid(req.body))) {
@@ -212,7 +146,6 @@ class ProfessionalsController {
     if (!professional) {
       return res.status(404).json({ error: 'Profissional não encontrado' });
     }
-
     const user = await User.findByPk(professional.user_id);
     if (!user) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
@@ -224,7 +157,6 @@ class ProfessionalsController {
       phone: phone ?? user.phone,
       password: password ?? user.password,
     });
-
     await professional.update({
       professional_register: professional_register ?? professional.professional_register,
       professional_type: professional_type ?? professional.professional_type,

@@ -45,6 +45,7 @@ routes.put('/medication_inventory/:id', MedicationInventoryController.update);
 routes.delete('/medication_inventory/:id', MedicationInventoryController.delete);
 
 routes.get('/medical_records', paginationMiddleware, MedicalRecordsController.index);
+routes.get('/medical_records/patient/:patient_id', paginationMiddleware, MedicalRecordsController.findByPatient);
 routes.get('/medical_records/:id', MedicalRecordsController.show);
 routes.post('/medical_records', MedicalRecordsController.create);
 routes.put('/medical_records/:id', MedicalRecordsController.update);

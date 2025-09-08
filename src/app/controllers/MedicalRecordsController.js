@@ -12,15 +12,9 @@ class MedicalRecordsController {
     const { limit, offset } = req.pagination;
 
     const where = {};
-    if (professional_id) {
-      where.professional_id = professional_id;
-    }
-    if (appointment_id) {
-      where.appointment_id = appointment_id;
-    }
-    if (record_date) {
-      where.record_date = { [Op.gte]: new Date(record_date) };
-    }
+    if (professional_id) where.professional_id = professional_id;
+    if (appointment_id) where.appointment_id = appointment_id;
+    if (record_date) where.record_date = { [Op.gte]: new Date(record_date) };
 
     const data = await MedicalRecord.findAndCountAll({
       where,
@@ -155,19 +149,14 @@ class MedicalRecordsController {
     if (!professional) {
       return res.status(400).json({ error: 'Profissional não encontrado' });
     }
-
     const appointment = await Appointment.findByPk(appointment_id);
     if (!appointment) {
       return res.status(400).json({ error: 'Agendamento não encontrado' });
     }
-
-    const existingRecord = await MedicalRecord.findOne({
-      where: { appointment_id },
-    });
+    const existingRecord = await MedicalRecord.findOne({ where: { appointment_id } });
     if (existingRecord) {
       return res.status(400).json({ error: 'Já existe um prontuário para este agendamento' });
     }
-
     const medicalRecord = await MedicalRecord.create({
       professional_id,
       appointment_id,
@@ -178,7 +167,6 @@ class MedicalRecordsController {
       allergies,
       treatment_plan,
     });
-
     return res.json({ medicalRecord });
   }
 
@@ -202,9 +190,73 @@ class MedicalRecordsController {
     if (!medicalRecord) {
       return res.status(404).json({ error: 'Prontuário médico não encontrado' });
     }
-
     await medicalRecord.update(req.body);
     return res.json({ medicalRecord });
+  }
+
+  async findByPatient(req, res) {
+    const { patient_id } = req.params;
+    const { limit, offset } = req.pagination;
+
+    const data = await MedicalRecord.findAndCountAll({
+      include: [
+        {
+          model: Professional,
+          as: 'professional',
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: ['id', 'name'],
+            },
+          ],
+          attributes: ['id', 'professional_register', 'professional_type', 'specialty'],
+        },
+        {
+          model: Appointment,
+          as: 'appointment',
+          where: { patient_id },
+          include: [
+            {
+              model: Patient,
+              as: 'patient',
+              include: [
+                {
+                  model: User,
+                  as: 'users',
+                  attributes: ['id', 'name'],
+                },
+              ],
+              attributes: ['id'],
+            },
+          ],
+          attributes: ['id', 'date_time', 'specialty', 'status'],
+        },
+      ],
+      order: [['record_date', 'DESC']],
+      limit,
+      offset,
+      attributes: [
+        'id',
+        'professional_id',
+        'appointment_id',
+        'record_date',
+        'observations',
+        'prescribed_medications',
+        'requested_exams',
+        'disease_history',
+        'allergies',
+        'treatment_plan',
+      ],
+    });
+
+    return res.json({
+      data: data.rows,
+      total: data.count,
+      limit,
+      page: offset / limit + 1,
+      pages: Math.ceil(data.count / limit),
+    });
   }
 
   async delete(req, res) {
