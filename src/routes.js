@@ -8,6 +8,7 @@ import HealthUnitsController from './app/controllers/HealthUnitsController.js';
 import MedicationsController from './app/controllers/MedicationsController.js';
 import MedicationInventoryController from './app/controllers/MedicationInventoryController.js';
 import MedicalRecordsController from './app/controllers/MedicalRecordsController.js';
+import AppointmentsController from './app/controllers/AppointmentsController.js';
 
 const routes = new Router();
 
@@ -48,5 +49,11 @@ routes.get('/medical_records/:id', MedicalRecordsController.show);
 routes.post('/medical_records', MedicalRecordsController.create);
 routes.put('/medical_records/:id', MedicalRecordsController.update);
 routes.delete('/medical_records/:id', MedicalRecordsController.delete);
+
+routes.get('/appointments', paginationMiddleware, AppointmentsController.index);
+routes.get('/appointments/:id', AppointmentsController.show);
+routes.post('/appointments', AppointmentsController.create);
+routes.put('/appointments/:id', AppointmentsController.update);
+routes.delete('/appointments/:id', AppointmentsController.delete);
 
 export default routes;
