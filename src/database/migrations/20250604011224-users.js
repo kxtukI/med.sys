@@ -28,7 +28,7 @@ module.exports = {
         allowNull: false,
       },
       user_type: {
-        type: Sequelize.ENUM('patient', 'professional'), 
+        type: Sequelize.ENUM('patient', 'professional', 'admin'), 
         allowNull: false,
         defaultValue: 'patient',
       },

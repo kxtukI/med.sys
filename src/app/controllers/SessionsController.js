@@ -48,7 +48,7 @@ class SessionsController {
     }
 
     if (!(await data.checkPassword(password))) {
-      return res.status(401).json({ error: 'Senha incorreta' });
+      return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
 
     return res.json({   

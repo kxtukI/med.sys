@@ -1,4 +1,6 @@
 import User from '../models/Users.js';
+import Professionals from '../models/Professionals.js';
+import Appointments from '../models/Appointments.js';
 
 const authorizationMiddleware = (allowedRoles = []) => {
   return async (req, res, next) => {
@@ -15,8 +17,31 @@ const authorizationMiddleware = (allowedRoles = []) => {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
+    req.currentUser = user;
     return next();
   };
+};
+
+export const checkOwnershipOrAdmin = async (req, res, next) => {
+  const userId = req.userId;
+  const resourceId = req.params.id || req.params.professional_id || req.params.appointment_id;
+  const resource = req.route?.path?.includes('professional') ? 'professional' : 'appointment';
+
+  if (resource === 'professional') {
+    const prof = await Professionals.findOne({ where: { user_id: userId } });
+    if (!prof || String(prof.id) !== String(resourceId)) {
+      return res.status(403).json({ error: 'Você não pode acessar este recurso' });
+    }
+  } else if (resource === 'appointment') {
+    const apt = await Appointments.findByPk(resourceId);
+    if (!apt) return res.status(404).json({ error: 'Agendamento não encontrado' });
+    const profUser = await Professionals.findOne({ where: { user_id: userId } });
+    if (!profUser || String(profUser.id) !== String(apt.professional_id)) {
+      return res.status(403).json({ error: 'Você não pode editar este agendamento' });
+    }
+  }
+
+  return next();
 };
 
 export default authorizationMiddleware;
