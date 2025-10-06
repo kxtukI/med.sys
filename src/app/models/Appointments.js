@@ -70,6 +70,7 @@ class Appointments extends Model {
     this.belongsTo(models.Patients, { foreignKey: 'patient_id', as: 'patient' });
     this.belongsTo(models.Professionals, { foreignKey: 'professional_id', as: 'professional' });
     this.belongsTo(models.HealthUnits, { foreignKey: 'health_unit_id', as: 'health_unit' });
+    this.hasMany(models.MedicalRecords, { foreignKey: 'appointment_id', as: 'medical_records' });
   }
 }
 

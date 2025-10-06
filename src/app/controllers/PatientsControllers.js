@@ -5,6 +5,8 @@ import { formatDateToDateOnly, formatDateOnlyToDisplay } from '../utils/dateUtil
 import { isValidCPF } from '../utils/documentUtils.js';
 import Patient from '../models/Patients.js';
 import User from '../models/Users.js';
+import Appointments from '../models/Appointments.js';
+import MedicalRecords from '../models/MedicalRecords.js';
 
 class PatientsController {
   async index(req, res) {
@@ -249,6 +251,70 @@ class PatientsController {
     const patientUser = await User.findByPk(patient.user_id);
     await patientUser.update({ active: false });
     return res.json({ message: 'Paciente desativado com sucesso' });
+  }
+
+  async getMedicalHistory(req, res) {
+    const { id } = req.params;
+
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ error: 'ID do paciente inválido' });
+    }
+
+    const patient = await Patient.findByPk(id, {
+      include: [
+        {
+          model: User,
+          as: 'users',
+          attributes: ['id', 'name', 'email'],
+        },
+        {
+          model: Appointments,
+          as: 'appointments',
+          include: [
+            {
+              model: MedicalRecords,
+              as: 'medical_records',
+              attributes: [
+                'id',
+                'record_date',
+                'observations',
+                'prescribed_medications',
+                'requested_exams',
+                'disease_history',
+                'allergies',
+                'treatment_plan',
+              ],
+            },
+          ],
+          attributes: ['id', 'date_time', 'specialty', 'status'],
+          order: [['date_time', 'DESC']],
+        },
+      ],
+      attributes: ['id', 'cpf', 'sus_number', 'birth_date'],
+    });
+
+    if (!patient) {
+      return res.status(404).json({ error: 'Paciente não encontrado' });
+    }
+
+    const formattedPatient = {
+      ...patient.toJSON(),
+      cpf: maskCpf(patient.cpf),
+      sus_number: patient.sus_number ? maskSus(patient.sus_number) : null,
+      birth_date: formatDateOnlyToDisplay(patient.birth_date),
+      appointments: patient.appointments.map(appointment => ({
+        ...appointment.toJSON(),
+        date_time: formatDateOnlyToDisplay(appointment.date_time),
+        medical_records: appointment.medical_records.map(record => ({
+          ...record.toJSON(),
+          record_date: formatDateOnlyToDisplay(record.record_date),
+        })),
+      })),
+    };
+
+    return res.json({
+      patient: formattedPatient,
+    });
   }
 }
 

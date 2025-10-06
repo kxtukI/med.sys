@@ -22,6 +22,26 @@ class UsersController {
     });
   }
 
+  async show(req, res) {
+    const { id } = req.params;
+    const user = await User.findByPk(id, {
+      attributes: { exclude: ['password_hash'] },
+    });
+    return res.json({ user });
+  }
+
+  async update(req, res) {
+    const { id } = req.params;
+    const user = await User.findByPk(id);
+    await user.update(req.body);
+    return res.json({ user });
+  }
+
+  async delete(req, res) {
+    const { id } = req.params;
+    await User.destroy({ where: { id } });
+    return res.json({ message: 'Usuário deletado com sucesso' });
+  }
 }
 
 export default new UsersController();

@@ -27,9 +27,26 @@ export const isValidDateFormat = (dateString) => {
   }
 };
 
-export const formatDateOnlyToDisplay = (dateOnlyString) => {
-  if (!dateOnlyString) return null;
+export const formatDateOnlyToDisplay = (dateInput) => {
+  if (!dateInput) return null;
   
-  const [year, month, day] = dateOnlyString.split('-');
+  let dateString;
+  
+  if (dateInput instanceof Date) {
+    dateString = dateInput.toISOString().split('T')[0];
+  }
+
+  else if (typeof dateInput === 'string') {
+    dateString = dateInput;
+  }
+  else {
+    dateString = String(dateInput);
+  }
+  
+  if (!dateString.includes('-') || dateString.split('-').length !== 3) {
+    return dateString; 
+  }
+  
+  const [year, month, day] = dateString.split('-');
   return `${day}/${month}/${year}`;
 }; 

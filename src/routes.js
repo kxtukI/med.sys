@@ -17,15 +17,21 @@ import SessionsController from './app/controllers/SessionsController.js';
 const routes = new Router();
 
 routes.get('/users', paginationMiddleware, UsersController.index);
+
 routes.post('/patients', PatientsControllers.create);
 routes.post('/sessions', SessionsController.login);
 
 routes.use(authMiddleware);
 
+routes.get('/users/:id', UsersController.show);
+routes.put('/users/:id', authorizationMiddleware(['admin']), UsersController.update);
+routes.delete('/users/:id', authorizationMiddleware(['admin']), UsersController.delete);
+
 routes.get('/patients', paginationMiddleware, PatientsControllers.index);
 routes.get('/patients/:id', PatientsControllers.show);
 routes.put('/patients/:id', PatientsControllers.update);
 routes.delete('/patients/:id', PatientsControllers.delete);
+routes.get('/patients/:id/medical_history', PatientsControllers.getMedicalHistory);
 
 routes.get('/professionals', paginationMiddleware, ProfessionalsController.index);
 routes.get('/professionals/:id', ProfessionalsController.show);
