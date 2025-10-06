@@ -20,6 +20,7 @@ routes.get('/users', paginationMiddleware, UsersController.index);
 
 routes.post('/patients', PatientsControllers.create);
 routes.post('/sessions', SessionsController.login);
+routes.post('/logout', SessionsController.logout);
 
 routes.use(authMiddleware);
 

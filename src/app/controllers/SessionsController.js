@@ -4,6 +4,8 @@ import authConfig from '../../config/auth.js';
 import User from '../models/Users.js';
 import Patient from '../models/Patients.js';
 
+const tokenBlacklist = new Set();
+
 class SessionsController {
   async login(req, res) {
     const { cpf, sus_number, email, password } = req.body;
@@ -64,6 +66,21 @@ class SessionsController {
       }),
     });
   }
+
+  async logout(req, res) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: 'Token não fornecido' });
+    }
+    const [, token] = authHeader.split(' ');
+    tokenBlacklist.add(token);
+    return res.json({ message: 'Logout realizado com sucesso' });
+  }
+
+  static isTokenBlacklisted(token) {
+    return tokenBlacklist.has(token);
+  }
 }
 
 export default new SessionsController();
+export { tokenBlacklist };
