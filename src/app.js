@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import Youch from 'youch';
+import cors from 'cors';
 
 import routes from './routes.js';
 import './database/index.js';
@@ -15,6 +16,7 @@ class App {
 
   middlewares() {
     this.server.use(express.json());
+    this.server.use(cors());
   }
 
   routes() {
