@@ -21,6 +21,10 @@ routes.get('/users', paginationMiddleware, UsersController.index);
 routes.post('/patients', PatientsControllers.create);
 routes.post('/sessions', SessionsController.login);
 routes.post('/logout', SessionsController.logout);
+routes.post('/password/request_recovery', UsersController.requestPasswordRecovery);
+routes.post('/password/reset', UsersController.resetPassword);
+routes.post('/patients/request_password_recovery', PatientsControllers.requestPasswordRecoveryByCpf);
+routes.post('/patients/reset_password', PatientsControllers.resetPassword);
 
 routes.use(authMiddleware);
 
