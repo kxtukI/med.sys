@@ -4,6 +4,7 @@ import Appointment from '../models/Appointments.js';
 import Patient from '../models/Patients.js';
 import Professional from '../models/Professionals.js';
 import HealthUnit from '../models/HealthUnits.js';
+import Referrals from '../models/Referrals.js';
 
 class AppointmentsController {
   async index(req, res) {
@@ -95,6 +96,32 @@ class AppointmentsController {
       return res.status(400).json({ error: 'Unidade de saúde não encontrada' });
     }
 
+    const isSpecialist = specialty && specialty.toLowerCase() !== 'clínico geral';
+    if (isSpecialist) {
+      const now = new Date();
+      const referral = await Referrals.findOne({
+        where: {
+          patient_id,
+          to_specialty: specialty,
+          status: 'approved',
+        },
+        order: [['id', 'DESC']],
+      });
+
+      if (!referral) {
+        return res.status(403).json({
+          error: 'Encaminhamento obrigatório',
+          details: [`Não há encaminhamento aprovado para a especialidade ${specialty}`],
+        });
+      }
+
+      if (referral.valid_until && new Date(referral.valid_until) < now) {
+        return res.status(403).json({ error: 'Encaminhamento expirado' });
+      }
+
+      req._referralToUse = referral;
+    }
+
     const appointment = await Appointment.create({
       patient_id,
       professional_id,
@@ -103,6 +130,10 @@ class AppointmentsController {
       specialty,
       status: status || 'scheduled',
     });
+
+    if (req._referralToUse) {
+      await req._referralToUse.update({ status: 'used' });
+    }
 
     return res.json({ appointment });
   }

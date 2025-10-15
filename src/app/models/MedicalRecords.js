@@ -58,6 +58,13 @@ class MedicalRecords extends Model {
         type: DataTypes.TEXT,
         allowNull: true,
       },
+      referral_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: { model: 'referrals', key: 'id' },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
+      },
       },
       {
         sequelize,
@@ -75,6 +82,10 @@ class MedicalRecords extends Model {
     this.belongsTo(models.Appointments, {
       foreignKey: 'appointment_id',
       as: 'appointment',
+    });
+    this.belongsTo(models.Referrals, {
+      foreignKey: 'referral_id',
+      as: 'referral',
     });
   }
 }

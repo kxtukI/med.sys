@@ -10,6 +10,7 @@ import Medications from '../app/models/Medications.js';
 import MedicationInventory from '../app/models/MedicationInventory.js';
 import HealthUnits from '../app/models/HealthUnits.js';
 import MedicalRecords from '../app/models/MedicalRecords.js';
+import Referrals from '../app/models/Referrals.js';
 
 const models = [
   Users,
@@ -20,6 +21,7 @@ const models = [
   MedicationInventory,
   MedicalRecords,
   HealthUnits,
+  Referrals,
 ];
 
 class Database {

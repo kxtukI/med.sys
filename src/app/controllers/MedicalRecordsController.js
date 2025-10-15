@@ -5,6 +5,7 @@ import Professional from '../models/Professionals.js';
 import Appointment from '../models/Appointments.js';
 import User from '../models/Users.js';
 import Patient from '../models/Patients.js';
+import Referrals from '../models/Referrals.js';
 
 class MedicalRecordsController {
   async index(req, res) {
@@ -109,6 +110,10 @@ class MedicalRecordsController {
             },
           ],
         },
+        {
+          model: Referrals,
+          as: 'referral',
+        },
       ],
     });
     if (!medicalRecord) {
@@ -127,6 +132,13 @@ class MedicalRecordsController {
       disease_history: Yup.string().nullable(),
       allergies: Yup.string().nullable(),
       treatment_plan: Yup.string().nullable(),
+      referral: Yup.object()
+        .shape({
+          to_specialty: Yup.string().required(),
+          notes: Yup.string().nullable(),
+          valid_until: Yup.date().nullable(),
+        })
+        .nullable(),
     });
 
     if (!(await schema.isValid(req.body))) {
@@ -143,6 +155,7 @@ class MedicalRecordsController {
       disease_history,
       allergies,
       treatment_plan,
+      referral,
     } = req.body;
 
     const professional = await Professional.findByPk(professional_id);
@@ -167,6 +180,19 @@ class MedicalRecordsController {
       allergies,
       treatment_plan,
     });
+
+    if (referral && referral.to_specialty) {
+      const createdReferral = await Referrals.create({
+        patient_id: appointment.patient_id,
+        from_professional_id: professional.id,
+        to_specialty: referral.to_specialty,
+        notes: referral.notes,
+        valid_until: referral.valid_until,
+        appointment_id: appointment.id,
+        status: 'approved',
+      });
+      await medicalRecord.update({ referral_id: createdReferral.id });
+    }
     return res.json({ medicalRecord });
   }
 
@@ -178,6 +204,13 @@ class MedicalRecordsController {
       disease_history: Yup.string().optional(),
       allergies: Yup.string().optional(),
       treatment_plan: Yup.string().optional(),
+      referral: Yup.object()
+        .shape({
+          to_specialty: Yup.string().required(),
+          notes: Yup.string().nullable(),
+          valid_until: Yup.date().nullable(),
+        })
+        .nullable(),
     });
 
     if (!(await schema.isValid(req.body))) {
@@ -191,6 +224,35 @@ class MedicalRecordsController {
       return res.status(404).json({ error: 'Prontuário médico não encontrado' });
     }
     await medicalRecord.update(req.body);
+
+    const { referral } = req.body;
+    if (referral && referral.to_specialty) {
+      const appointment = await Appointment.findByPk(medicalRecord.appointment_id);
+      const professional = await Professional.findByPk(medicalRecord.professional_id);
+
+      if (medicalRecord.referral_id) {
+        const existing = await Referrals.findByPk(medicalRecord.referral_id);
+        if (existing) {
+          await existing.update({
+            to_specialty: referral.to_specialty,
+            notes: referral.notes,
+            valid_until: referral.valid_until,
+          });
+        }
+      } else {
+        const createdReferral = await Referrals.create({
+          patient_id: appointment.patient_id,
+          from_professional_id: professional.id,
+          to_specialty: referral.to_specialty,
+          notes: referral.notes,
+          valid_until: referral.valid_until,
+          appointment_id: appointment.id,
+          status: 'approved',
+        });
+        await medicalRecord.update({ referral_id: createdReferral.id });
+      }
+    }
+
     return res.json({ medicalRecord });
   }
 

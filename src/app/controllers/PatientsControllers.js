@@ -321,54 +321,6 @@ class PatientsController {
     });
   }
 
-  async requestPasswordRecoveryByCpf(req, res) {
-    const { cpf } = req.body;
-    if (!cpf) {
-      return res.status(400).json({ error: 'CPF é obrigatório' });
-    }
-    const patient = await Patient.findOne({
-      where: { cpf },
-      include: [{ model: User, as: 'users' }],
-    });
-    if (!patient || !patient.users) {
-      return res.status(404).json({ error: 'Paciente ou usuário não encontrado' });
-    }
-    const user = patient.users;
-    if (!user.phone) {
-      return res.status(400).json({ error: 'Usuário não possui telefone cadastrado' });
-    }
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    recoveryCodes.set(user.id, { code, expires: Date.now() + 10 * 60 * 1000 });
-    await twilioClient.messages.create({
-      body: `Seu código de recuperação é: ${code}`,
-      from: twilioFrom,
-      to: `+55${user.phone}`,
-    });
-    return res.json({ message: `Código de recuperação enviado para o telefone cadastrado: ${user.phone}` });
-  }
-
-  async resetPassword(req, res) {
-    const { userId, code, newPassword } = req.body;
-    const entry = recoveryCodes.get(userId);
-    if (!entry || entry.code !== code || entry.expires < Date.now()) {
-      return res.status(400).json({ error: 'Código inválido ou expirado' });
-    }
-    const user = await User.findByPk(userId);
-    if (!user) {
-      return res.status(404).json({ error: 'Usuário não encontrado' });
-    }
-    const schema = Yup.object().shape({
-      newPassword: Yup.string().required('Senha é obrigatória').min(8, 'Senha deve ter no mínimo 8 caracteres').matches(/^(?=.*[A-Za-z])(?=.*\d)\S{8,}$/, 'Senha deve conter pelo menos uma letra e um número'),
-    });
-    if (!(await schema.isValid(req.body))) {
-      const validationErrors = await schema.validate(req.body, { abortEarly: false }).catch((err) => err.errors);
-      return res.status(400).json({ error: 'Dados inválidos', details: validationErrors });
-    }
-    user.password = newPassword;
-    await user.save();
-    recoveryCodes.delete(userId);
-    return res.json({ message: 'Senha redefinida com sucesso' });
-  }
 }
 
 export default new PatientsController();

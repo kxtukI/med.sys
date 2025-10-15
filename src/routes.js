@@ -9,6 +9,7 @@ import MedicationsController from './app/controllers/MedicationsController.js';
 import MedicationInventoryController from './app/controllers/MedicationInventoryController.js';
 import MedicalRecordsController from './app/controllers/MedicalRecordsController.js';
 import AppointmentsController from './app/controllers/AppointmentsController.js';
+import ReferralsController from './app/controllers/ReferralsController.js';
 import authMiddleware from './app/middlewares/authMiddleware.js';
 import authorizationMiddleware, { checkOwnershipOrAdmin } from './app/middlewares/authorizationMiddleware.js';
 import { checkMedicalRecordOwnership, checkAppointmentOwnership } from './app/middlewares/ownershipMiddleware.js';
@@ -16,27 +17,24 @@ import SessionsController from './app/controllers/SessionsController.js';
 
 const routes = new Router();
 
-routes.get('/users', paginationMiddleware, UsersController.index);
-
 routes.post('/patients', PatientsControllers.create);
 routes.post('/sessions', SessionsController.login);
 routes.post('/logout', SessionsController.logout);
 routes.post('/password/request_recovery', UsersController.requestPasswordRecovery);
 routes.post('/password/reset', UsersController.resetPassword);
-routes.post('/patients/request_password_recovery', PatientsControllers.requestPasswordRecoveryByCpf);
-routes.post('/patients/reset_password', PatientsControllers.resetPassword);
 
 routes.use(authMiddleware);
 
-routes.get('/users/:id', UsersController.show);
+routes.get('/users', authorizationMiddleware(['admin']), paginationMiddleware, UsersController.index);
+routes.get('/users/:id', authorizationMiddleware(['admin']), UsersController.show);
 routes.put('/users/:id', authorizationMiddleware(['admin']), UsersController.update);
 routes.delete('/users/:id', authorizationMiddleware(['admin']), UsersController.delete);
 
-routes.get('/patients', paginationMiddleware, PatientsControllers.index);
-routes.get('/patients/:id', PatientsControllers.show);
-routes.put('/patients/:id', PatientsControllers.update);
-routes.delete('/patients/:id', PatientsControllers.delete);
-routes.get('/patients/:id/medical_history', PatientsControllers.getMedicalHistory);
+routes.get('/patients', authorizationMiddleware(['professional', 'admin']), paginationMiddleware, PatientsControllers.index);
+routes.get('/patients/:id', authorizationMiddleware(['professional', 'admin']), PatientsControllers.show);
+routes.put('/patients/:id', authorizationMiddleware(['admin']), PatientsControllers.update);
+routes.delete('/patients/:id', authorizationMiddleware(['admin']), PatientsControllers.delete);
+routes.get('/patients/:id/medical_history', authorizationMiddleware(['professional']), PatientsControllers.getMedicalHistory);
 
 routes.get('/professionals', paginationMiddleware, ProfessionalsController.index);
 routes.get('/professionals/:id', ProfessionalsController.show);
@@ -60,19 +58,24 @@ routes.get('/medication_inventory', paginationMiddleware, MedicationInventoryCon
 routes.get('/medication_inventory/:id', MedicationInventoryController.show);
 routes.post('/medication_inventory', authorizationMiddleware(['professional']), MedicationInventoryController.create);
 routes.put('/medication_inventory/:id', authorizationMiddleware(['professional']), MedicationInventoryController.update);
-routes.delete('/medication_inventory/:id', authorizationMiddleware(['professional']), MedicationInventoryController.delete);
+routes.delete('/medication_inventory/:id', authorizationMiddleware(['admin']), MedicationInventoryController.delete);
 
 routes.get('/medical_records', paginationMiddleware, MedicalRecordsController.index);
 routes.get('/medical_records/patient/:patient_id', paginationMiddleware, MedicalRecordsController.findByPatient);
 routes.get('/medical_records/:id', MedicalRecordsController.show);
-routes.post('/medical_records', authorizationMiddleware(['professional']), MedicalRecordsController.create);
-routes.put('/medical_records/:id', authorizationMiddleware(['professional']), checkMedicalRecordOwnership, MedicalRecordsController.update);
-routes.delete('/medical_records/:id', authorizationMiddleware(['professional']), checkMedicalRecordOwnership, MedicalRecordsController.delete);
+routes.post('/medical_records', authorizationMiddleware(['professional', 'admin']), MedicalRecordsController.create);
+routes.put('/medical_records/:id', authorizationMiddleware(['professional', 'admin']), checkMedicalRecordOwnership, MedicalRecordsController.update);
+routes.delete('/medical_records/:id', authorizationMiddleware(['admin']), MedicalRecordsController.delete);
 
 routes.get('/appointments', paginationMiddleware, AppointmentsController.index);
 routes.get('/appointments/:id', AppointmentsController.show);
-routes.post('/appointments', authorizationMiddleware(['professional']), AppointmentsController.create);
-routes.put('/appointments/:id', authorizationMiddleware(['professional']), checkAppointmentOwnership, AppointmentsController.update);
-routes.delete('/appointments/:id', authorizationMiddleware(['professional']), checkAppointmentOwnership, AppointmentsController.delete);
+routes.post('/appointments', authorizationMiddleware(['professional', 'admin']), AppointmentsController.create);
+routes.put('/appointments/:id', authorizationMiddleware(['professional', 'admin']), checkAppointmentOwnership, AppointmentsController.update);
+routes.delete('/appointments/:id', authorizationMiddleware(['admin']), AppointmentsController.delete);
+
+routes.get('/referrals', authorizationMiddleware(['professional', 'admin']), ReferralsController.index);
+routes.get('/referrals/:id', authorizationMiddleware(['professional', 'admin']), ReferralsController.show);
+routes.post('/referrals', authorizationMiddleware(['professional']), ReferralsController.create);
+routes.put('/referrals/:id', authorizationMiddleware(['professional', 'admin']), ReferralsController.update);
 
 export default routes;

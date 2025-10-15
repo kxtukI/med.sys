@@ -1,4 +1,5 @@
 import { Op } from 'sequelize';
+import * as Yup from 'yup';
 
 import User from '../models/Users.js';
 import nodemailer from 'nodemailer';
@@ -59,15 +60,17 @@ class UsersController {
   }
 
   async requestPasswordRecovery(req, res) {
-    const { email, phone } = req.body;
-    if (!email && !phone) {
-      return res.status(400).json({ error: 'Informe email ou telefone' });
+    const { email, cpf } = req.body;
+    if (!email && !cpf) {
+      return res.status(400).json({ error: 'Informe email ou CPF' });
     }
     let user;
     if (email) {
       user = await User.findOne({ where: { email } });
-    } else if (phone) {
-      user = await User.findOne({ where: { phone } });
+    } else if (cpf) {
+      const { default: Patients } = await import('../models/Patients.js');
+      const patient = await Patients.findOne({ where: { cpf }, include: [{ model: User, as: 'users' }] });
+      if (patient) user = patient.users;
     }
     if (!user) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
@@ -81,38 +84,61 @@ class UsersController {
         subject: 'Recuperação de senha',
         text: `Seu código de recuperação é: ${code}`,
       });
-    } else if (phone) {
-      await twilioClient.messages.create({
-        body: `Seu código de recuperação é: ${code}`,
-        from: twilioFrom,
-        to: `+55${phone}`,
-      });
+    } else if (cpf) {
+      if (user.phone) {
+        await twilioClient.messages.create({
+          body: `Seu código de recuperação é: ${code}`,
+          from: twilioFrom,
+          to: `+55${user.phone}`,
+        });
+      } else {
+        return res.status(400).json({ error: 'Usuário não possui telefone cadastrado para envio do código' });
+      }
     }
-    return res.json({ message: 'Código de recuperação enviado' });
-  }
-
-  async validateRecoveryCode(req, res) {
-    const { userId, code } = req.body;
-    const entry = recoveryCodes.get(userId);
-    if (!entry || entry.code !== code || entry.expires < Date.now()) {
-      return res.status(400).json({ error: 'Código inválido ou expirado' });
-    }
-    return res.json({ message: 'Código válido' });
+    return res.json({ 
+      message: `Código de recuperação enviado no telefone: ${user.phone}`
+    });
   }
 
   async resetPassword(req, res) {
     const { userId, code, newPassword } = req.body;
-    const entry = recoveryCodes.get(userId);
+    
+    let targetUserId = userId;
+    if (!targetUserId) {
+      for (const [id, entry] of recoveryCodes.entries()) {
+        if (entry.code === code && entry.expires > Date.now()) {
+          targetUserId = id;
+          break;
+        }
+      }
+      if (!targetUserId) {
+        return res.status(400).json({ error: 'Código inválido ou expirado' });
+      }
+    }
+    
+    const entry = recoveryCodes.get(targetUserId);
     if (!entry || entry.code !== code || entry.expires < Date.now()) {
       return res.status(400).json({ error: 'Código inválido ou expirado' });
     }
-    const user = await User.findByPk(userId);
+    const user = await User.findByPk(targetUserId);
     if (!user) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
+
+    const schema = Yup.object().shape({
+      newPassword: Yup.string().required('Senha é obrigatória')
+        .min(8, 'Senha deve ter no mínimo 8 caracteres')
+        .matches(/^(?=.*[A-Za-z])(?=.*\d)\S{8,}$/, 'Senha deve conter pelo menos uma letra e um número'),
+    });
+
+    if (!(await schema.isValid(req.body))) {
+      const validationErrors = await schema.validate(req.body, { abortEarly: false }).catch((err) => err.errors);
+      return res.status(400).json({ error: 'Dados inválidos', details: validationErrors });
+    }
+
     user.password = newPassword;
     await user.save();
-    recoveryCodes.delete(userId);
+    recoveryCodes.delete(targetUserId);
     return res.json({ message: 'Senha redefinida com sucesso' });
   }
 }

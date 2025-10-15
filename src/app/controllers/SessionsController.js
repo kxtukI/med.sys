@@ -53,17 +53,18 @@ class SessionsController {
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
 
+    const token = jwt.sign({ id: data.id }, authConfig.secret, {
+      expiresIn: authConfig.expiresIn,
+    });
+
     return res.json({   
       user: {
         id: data.id,
         name: data.name,
         email: data.email,
-        password: data.password,
         user_type: data.user_type,
       },
-      token: jwt.sign({ id: data.id }, authConfig.secret, {
-        expiresIn: authConfig.expiresIn,
-      }),
+      token,
     });
   }
 

@@ -4,6 +4,16 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.bulkInsert('users', [
       {
+        // password: admin
+        name: 'Novo Admin',
+        email: 'admin@novo.com',
+        password_hash: '$2b$08$pn04SkRV85hHH.AQoG92leYj3GsoTydbmeZqboJhjP/DfYh.Yma4O',
+        phone: '11999999999',
+        user_type: 'admin',
+        registration_date: new Date(),
+        active: true,
+      },
+      {
         name: 'Admin Sistema',
         email: 'admin@sistema.com',
         password_hash: '$2b$08$CHuZYt1TivggJ4uCLs..les6yLB2.1Fwr5Snoqv6LN3wYPdlOq9sO',
