@@ -17,7 +17,7 @@ class HealthUnitsController {
       order: [['name', 'ASC']],
       limit,
       offset,
-      attributes: ['id', 'name', 'address', 'city', 'state', 'zip_code', 'phone', 'working_hours'],
+      attributes: ['id', 'name', 'address', 'city', 'state', 'zip_code', 'phone', 'working_hours', 'photo_url'],
     });
 
     return res.json({
@@ -54,10 +54,17 @@ class HealthUnitsController {
       return res.status(400).json({ error: 'Dados inválidos', details: validationErrors });
     }
 
-    const { name, address, city, state, zip_code, phone, working_hours } = req.body;
-    const healthUnit = await HealthUnit.create({ name, address, city, state, zip_code, phone, working_hours });
+    const healthUnitData = { ...req.body };
+
+    if (req.file && req.file.cloudinaryUrl) {
+      healthUnitData.photo_url = req.file.cloudinaryUrl;
+    }
+
+    const healthUnit = await HealthUnit.create(healthUnitData);
+
     return res.json({ healthUnit });
   }
+
 
   async update(req, res) {
     const schema = Yup.object().shape({
@@ -81,7 +88,13 @@ class HealthUnitsController {
       return res.status(404).json({ error: 'Unidade de Saúde não encontrada' });
     }
 
-    await healthUnit.update(req.body);
+    const updateData = { ...req.body };
+
+    if (req.file && req.file.cloudinaryUrl) {
+      updateData.photo_url = req.file.cloudinaryUrl;
+    }
+
+    await healthUnit.update(updateData);
     return res.json({ healthUnit });
   }
 

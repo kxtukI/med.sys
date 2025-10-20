@@ -1,5 +1,6 @@
 import paginationMiddleware from './app/middlewares/paginationMiddleware.js';
 import { Router } from 'express';
+import { upload, uploadToCloudinary } from './app/middlewares/upload.js';
 
 import UsersController from './app/controllers/UsersController.js';
 import PatientsControllers from './app/controllers/PatientsControllers.js';
@@ -38,20 +39,20 @@ routes.get('/patients/:id/medical_history', authorizationMiddleware(['profession
 
 routes.get('/professionals', paginationMiddleware, ProfessionalsController.index);
 routes.get('/professionals/:id', ProfessionalsController.show);
-routes.post('/professionals', authorizationMiddleware(['admin']), ProfessionalsController.create);
-routes.put('/professionals/:id', authorizationMiddleware(['professional', 'admin']), checkOwnershipOrAdmin, ProfessionalsController.update);
+routes.post('/professionals', authorizationMiddleware(['admin']), upload.single('photo'), uploadToCloudinary, ProfessionalsController.create);
+routes.put('/professionals/:id', authorizationMiddleware(['professional', 'admin']), checkOwnershipOrAdmin, upload.single('photo'), uploadToCloudinary, ProfessionalsController.update);
 routes.delete('/professionals/:id', authorizationMiddleware(['admin']), ProfessionalsController.delete);
 
 routes.get('/health_units', paginationMiddleware, HealthUnitsController.index);
 routes.get('/health_units/:id', HealthUnitsController.show);
-routes.post('/health_units', authorizationMiddleware(['admin']), HealthUnitsController.create);
-routes.put('/health_units/:id', authorizationMiddleware(['admin']), HealthUnitsController.update);
+routes.post('/health_units', authorizationMiddleware(['admin']), upload.single('photo'), uploadToCloudinary, HealthUnitsController.create);
+routes.put('/health_units/:id', authorizationMiddleware(['admin']), upload.single('photo'), uploadToCloudinary, HealthUnitsController.update);
 routes.delete('/health_units/:id', authorizationMiddleware(['admin']), HealthUnitsController.delete);
 
 routes.get('/medications', paginationMiddleware, MedicationsController.index);
 routes.get('/medications/:id', MedicationsController.show);
-routes.post('/medications', authorizationMiddleware(['admin']), MedicationsController.create);
-routes.put('/medications/:id', authorizationMiddleware(['admin']), MedicationsController.update);
+routes.post('/medications', authorizationMiddleware(['admin']), upload.single('photo'), uploadToCloudinary, MedicationsController.create);
+routes.put('/medications/:id', authorizationMiddleware(['admin']), upload.single('photo'), uploadToCloudinary, MedicationsController.update);
 routes.delete('/medications/:id', authorizationMiddleware(['admin']), MedicationsController.delete);
 
 routes.get('/medication_inventory', paginationMiddleware, MedicationInventoryController.index);

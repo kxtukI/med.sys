@@ -26,6 +26,7 @@ class MedicationsController {
         'dosage',
         'contraindications',
         'manufacturer',
+        'photo_url'
       ],
     });
 
@@ -63,8 +64,13 @@ class MedicationsController {
       return res.status(400).json({ error: 'Dados inválidos', details: validationErrors });
     }
 
-    const { name, active_ingredient, category, description, dosage, contraindications, manufacturer } = req.body;
-    const medication = await Medication.create({ name, active_ingredient, category, description, dosage, contraindications, manufacturer });
+    const medicationData = { ...req.body };
+
+    if (req.file && req.file.cloudinaryUrl) {
+      medicationData.photo_url = req.file.cloudinaryUrl;
+    }
+
+    const medication = await Medication.create(medicationData);
     return res.json({ medication });
   }
 
@@ -90,7 +96,13 @@ class MedicationsController {
       return res.status(404).json({ error: 'Medicamento não encontrado' });
     }
 
-    await medication.update(req.body);
+    const updateData = { ...req.body };
+
+    if (req.file && req.file.cloudinaryUrl) {
+      updateData.photo_url = req.file.cloudinaryUrl;
+    }
+
+    await medication.update(updateData);
     return res.json({ medication });
   }
 

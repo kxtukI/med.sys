@@ -37,6 +37,10 @@ class Medications extends Model {
           type: DataTypes.STRING,
           allowNull: true,
         },
+        photo_url: {
+          type: DataTypes.STRING,
+          allowNull: true,
+        },
       },
       {
         sequelize,

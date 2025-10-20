@@ -94,15 +94,21 @@ class ProfessionalsController {
       return res.status(400).json({ error: 'Dados inválidos', details: validationErrors });
     }
 
-    const { name, email, phone, password, professional_register, professional_type, specialty, health_unit_id, photo_url } = req.body;
+    const { name, email, phone, password, professional_register, professional_type, specialty, health_unit_id } = req.body;
 
     const existingProfessional = await Professionals.findOne({ where: { professional_register } });
     if (existingProfessional) {
       return res.status(400).json({ error: 'Registro profissional já cadastrado.' });
     }
 
+    const professionalData = { professional_register, professional_type, specialty, health_unit_id };
+
+    if (req.file && req.file.cloudinaryUrl) {
+      professionalData.photo_url = req.file.cloudinaryUrl;
+    }
+
     const user = await User.create({ name, email, phone, password, user_type: 'professional' });
-    const professional = await Professionals.create({ user_id: user.id, professional_register, professional_type, specialty, health_unit_id, photo_url });
+    const professional = await Professionals.create({ user_id: user.id, ...professionalData });
 
     return res.json({
       professional: {
@@ -151,20 +157,25 @@ class ProfessionalsController {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
 
+    const professionalUpdateData = {
+      professional_register: professional_register ?? professional.professional_register,
+      professional_type: professional_type ?? professional.professional_type,
+      specialty: specialty ?? professional.specialty,
+      health_unit_id: health_unit_id ?? professional.health_unit_id,
+      status: status ?? professional.status,
+    };
+
+    if (req.file && req.file.cloudinaryUrl) {
+      professionalUpdateData.photo_url = req.file.cloudinaryUrl;
+    }
+
     await user.update({
       name: name ?? user.name,
       email: email ?? user.email,
       phone: phone ?? user.phone,
       password: password ?? user.password,
     });
-    await professional.update({
-      professional_register: professional_register ?? professional.professional_register,
-      professional_type: professional_type ?? professional.professional_type,
-      specialty: specialty ?? professional.specialty,
-      health_unit_id: health_unit_id ?? professional.health_unit_id,
-      photo_url: photo_url ?? professional.photo_url,
-      status: status ?? professional.status,
-    });
+    await professional.update(professionalUpdateData);
 
     const updatedProfessional = await Professionals.findByPk(id, {
       include: [
