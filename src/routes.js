@@ -36,7 +36,7 @@ routes.get('/patients', authorizationMiddleware(['professional', 'admin']), pagi
 routes.get('/patients/:id', authorizationMiddleware(['professional', 'admin']), PatientsControllers.show);
 routes.put('/patients/:id', authorizationMiddleware(['admin']), PatientsControllers.update);
 routes.delete('/patients/:id', authorizationMiddleware(['admin']), PatientsControllers.delete);
-routes.get('/patients/:id/medical_history', authorizationMiddleware(['professional']), PatientsControllers.getMedicalHistory);
+routes.get('/patients/:id/medical_history', authorizationMiddleware(['professional', 'admin']), PatientsControllers.getMedicalHistory);
 
 routes.get('/professionals', paginationMiddleware, ProfessionalsController.index);
 routes.get('/professionals/:id', ProfessionalsController.show);
