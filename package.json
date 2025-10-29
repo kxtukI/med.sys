@@ -20,8 +20,6 @@
     "postgres": "^3.4.7",
     "sequelize": "^6.37.7",
     "sucrase": "^3.35.0",
-    "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1",
     "twilio": "^4.19.2",
     "youch": "^3.3.4",
     "yup": "^1.6.1"
