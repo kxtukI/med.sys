@@ -8,6 +8,7 @@ import Professionals from '../app/models/Professionals.js';
 import Appointments from '../app/models/Appointments.js';
 import Medications from '../app/models/Medications.js';
 import MedicationInventory from '../app/models/MedicationInventory.js';
+import MedicationReservations from '../app/models/MedicationReservations.js';
 import HealthUnits from '../app/models/HealthUnits.js';
 import MedicalRecords from '../app/models/MedicalRecords.js';
 import Referrals from '../app/models/Referrals.js';
@@ -19,6 +20,7 @@ const models = [
   Appointments,
   Medications,
   MedicationInventory,
+  MedicationReservations,
   MedicalRecords,
   HealthUnits,
   Referrals,
@@ -63,4 +65,4 @@ class Database {
   }
 }
 
-export default new Database();
+export default new Database().connection;

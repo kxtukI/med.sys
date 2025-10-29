@@ -8,6 +8,7 @@ import ProfessionalsController from './app/controllers/ProfessionalsController.j
 import HealthUnitsController from './app/controllers/HealthUnitsController.js';
 import MedicationsController from './app/controllers/MedicationsController.js';
 import MedicationInventoryController from './app/controllers/MedicationInventoryController.js';
+import MedicationReservationsController from './app/controllers/MedicationReservationsController.js';
 import MedicalRecordsController from './app/controllers/MedicalRecordsController.js';
 import AppointmentsController from './app/controllers/AppointmentsController.js';
 import ReferralsController from './app/controllers/ReferralsController.js';
@@ -57,9 +58,15 @@ routes.delete('/medications/:id', authorizationMiddleware(['admin']), Medication
 
 routes.get('/medication_inventory', paginationMiddleware, MedicationInventoryController.index);
 routes.get('/medication_inventory/:id', MedicationInventoryController.show);
-routes.post('/medication_inventory', authorizationMiddleware(['professional']), MedicationInventoryController.create);
-routes.put('/medication_inventory/:id', authorizationMiddleware(['professional']), MedicationInventoryController.update);
+routes.post('/medication_inventory', authorizationMiddleware(['professional', 'admin']), MedicationInventoryController.create);
+routes.put('/medication_inventory/:id', authorizationMiddleware(['professional', 'admin']), MedicationInventoryController.update);
 routes.delete('/medication_inventory/:id', authorizationMiddleware(['admin']), MedicationInventoryController.delete);
+
+routes.get('/medication_reservations', authorizationMiddleware(['patient', 'professional', 'admin']), paginationMiddleware, MedicationReservationsController.index);
+routes.get('/medication_reservations/:id', authorizationMiddleware(['patient', 'professional', 'admin']), MedicationReservationsController.show);
+routes.post('/medication_reservations', authorizationMiddleware(['patient', 'professional', 'admin']), MedicationReservationsController.create);
+routes.put('/medication_reservations/:id', authorizationMiddleware(['patient', 'professional', 'admin']), MedicationReservationsController.update);
+routes.delete('/medication_reservations/:id', authorizationMiddleware(['patient', 'professional', 'admin']), MedicationReservationsController.delete);
 
 routes.get('/medical_records', paginationMiddleware, MedicalRecordsController.index);
 routes.get('/medical_records/patient/:patient_id', paginationMiddleware, MedicalRecordsController.findByPatient);
@@ -76,7 +83,7 @@ routes.delete('/appointments/:id', authorizationMiddleware(['admin']), Appointme
 
 routes.get('/referrals', authorizationMiddleware(['professional', 'admin']), ReferralsController.index);
 routes.get('/referrals/:id', authorizationMiddleware(['professional', 'admin']), ReferralsController.show);
-routes.post('/referrals', authorizationMiddleware(['professional']), ReferralsController.create);
+routes.post('/referrals', authorizationMiddleware(['professional', 'admin']), ReferralsController.create);
 routes.put('/referrals/:id', authorizationMiddleware(['professional', 'admin']), ReferralsController.update);
 
 export default routes;

@@ -49,6 +49,10 @@ class Medications extends Model {
       }
     );
   }
+
+  static associate(models) {
+    this.hasMany(models.MedicationReservations, { foreignKey: 'medication_id', as: 'medication_reservations' });
+  }
 }
 
 export default Medications;

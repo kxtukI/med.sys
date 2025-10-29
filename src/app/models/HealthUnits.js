@@ -49,6 +49,10 @@ class HealthUnits extends Model {
       }
     );
   }
+
+  static associate(models) {
+    this.hasMany(models.MedicationReservations, { foreignKey: 'health_unit_id', as: 'medication_reservations' });
+  }
 }
 
 export default HealthUnits;
