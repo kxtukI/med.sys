@@ -77,8 +77,8 @@ routes.delete('/medical_records/:id', authorizationMiddleware(['admin']), Medica
 
 routes.get('/appointments', paginationMiddleware, AppointmentsController.index);
 routes.get('/appointments/:id', AppointmentsController.show);
-routes.post('/appointments', authorizationMiddleware(['professional', 'admin']), AppointmentsController.create);
-routes.put('/appointments/:id', authorizationMiddleware(['professional', 'admin']), checkAppointmentOwnership, AppointmentsController.update);
+routes.post('/appointments', AppointmentsController.create);
+routes.put('/appointments/:id', checkAppointmentOwnership, AppointmentsController.update);
 routes.delete('/appointments/:id', authorizationMiddleware(['admin']), AppointmentsController.delete);
 
 routes.get('/referrals', authorizationMiddleware(['professional', 'admin']), ReferralsController.index);

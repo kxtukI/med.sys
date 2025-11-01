@@ -156,7 +156,7 @@ GET /health_units?latitude=-23.5505&longitude=-46.6333&city=São Paulo
 ### Login
 **POST** `/sessions`
 
-Realiza login e retorna um token JWT.
+Realiza login e retorna um token JWT (Login pode ser feito usando CPF e Email).
 
 **Body:**
 ```json

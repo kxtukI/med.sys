@@ -49,7 +49,7 @@
 ### Login
 **POST** `/sessions`
 
-Realiza login e retorna um token JWT.
+Realiza login e retorna um token JWT (Login pode ser feito usando CPF e Email).
 
 **Body:**
 ```json

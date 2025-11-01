@@ -1,4 +1,5 @@
 import * as Yup from 'yup';
+import { injectUserResourceId } from '../utils/authUtils.js';
 import Referrals from '../models/Referrals.js';
 import Patients from '../models/Patients.js';
 import Professionals from '../models/Professionals.js';
@@ -25,7 +26,6 @@ class ReferralsController {
   async create(req, res) {
     const schema = Yup.object().shape({
       patient_id: Yup.number().required(),
-      from_professional_id: Yup.number().required(),
       to_specialty: Yup.string().required(),
       notes: Yup.string().nullable(),
       valid_until: Yup.date().nullable(),
@@ -38,23 +38,20 @@ class ReferralsController {
       return res.status(400).json({ error: 'Dados inválidos', details: validationErrors });
     }
 
-    const { patient_id, from_professional_id, to_specialty, notes, valid_until } = req.body;
+    const { patient_id, to_specialty, notes, valid_until } = req.body;
 
     const patient = await Patients.findByPk(patient_id);
     if (!patient) return res.status(400).json({ error: 'Paciente não encontrado' });
 
-    const fromProfessional = await Professionals.findByPk(from_professional_id);
-    if (!fromProfessional) return res.status(400).json({ error: 'Profissional não encontrado' });
-
-    const referral = await Referrals.create({
+    const referralData = await injectUserResourceId(req, {
       patient_id,
-      from_professional_id,
       to_specialty,
       notes,
       valid_until,
-      status: 'approved',
-    });
+      status: 'pending',
+    }, 'from_professional_id');
 
+    const referral = await Referrals.create(referralData);
     return res.status(201).json({ referral });
   }
 

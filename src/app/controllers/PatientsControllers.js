@@ -149,7 +149,7 @@ class PatientsController {
       return res.status(400).json({ error: 'Paciente com CPF ou número do SUS já cadastrado.' });
     }
 
-    const user = await User.create({ name, password, phone });
+    const user = await User.create({ name, password, phone, user_type: 'patient' });
     const patient = await Patient.create({ user_id: user.id, cpf, sus_number, birth_date: formattedBirthDate });
 
     return res.json({

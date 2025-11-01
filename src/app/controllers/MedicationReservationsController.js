@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import * as Yup from 'yup';
+import { injectUserResourceId } from '../utils/authUtils.js';
 
 import MedicationReservation from '../models/MedicationReservations.js';
 import MedicationInventory from '../models/MedicationInventory.js';
@@ -153,14 +154,8 @@ class MedicationReservationsController {
         return res.status(404).json({ error: 'Paciente não encontrado para este usuário' });
       }
       patientId = patient.id;
-    } else {
-      if (!patientId) {
-        return res.status(400).json({ error: 'ID do paciente é obrigatório para criar uma reserva' });
-      }
-      const patient = await Patient.findByPk(patientId);
-      if (!patient) {
-        return res.status(404).json({ error: 'Paciente informado não foi encontrado' });
-      }
+    } else if (!patientId) {
+      return res.status(400).json({ error: 'ID do paciente é obrigatório para profissionais' });
     }
 
     if (!patientId) {
@@ -168,76 +163,31 @@ class MedicationReservationsController {
     }
 
     const scheduledPickupDate = new Date(scheduled_pickup_at);
-    if (Number.isNaN(scheduledPickupDate.getTime())) {
-      return res.status(400).json({ error: 'Horário de retirada inválido' });
+    const inventory = await MedicationInventory.findOne({
+      where: { medication_id, health_unit_id },
+    });
+
+    if (!inventory || inventory.quantity < quantity) {
+      return res.status(400).json({ error: 'Quantidade insuficiente em estoque' });
     }
 
-    if (scheduledPickupDate.getTime() <= Date.now()) {
-      return res.status(400).json({ error: 'Horário de retirada deve ser posterior ao horário atual' });
-    }
+    const reservation = await MedicationReservation.create({
+      patient_id: patientId,
+      medication_id,
+      health_unit_id,
+      quantity,
+      scheduled_pickup_at: scheduledPickupDate,
+      notes,
+      status: 'reserved',
+    });
 
-    const medication = await Medication.findByPk(medication_id);
-    if (!medication) {
-      return res.status(404).json({ error: 'Medicamento não encontrado' });
-    }
+    await inventory.decrement('quantity', { by: quantity });
 
-    const healthUnit = await HealthUnit.findByPk(health_unit_id);
-    if (!healthUnit) {
-      return res.status(404).json({ error: 'Unidade de saúde não encontrada' });
-    }
+    const createdReservation = await MedicationReservation.findByPk(reservation.id, {
+      include: reservationIncludes,
+    });
 
-    const transaction = await sequelize.transaction();
-
-    try {
-      const inventory = await MedicationInventory.findOne({
-        where: { medication_id, health_unit_id },
-        transaction,
-        lock: transaction.LOCK.UPDATE,
-      });
-
-      if (!inventory) {
-        await transaction.rollback();
-        return res.status(400).json({ error: 'Não há estoque cadastrado para este medicamento nesta unidade de saúde' });
-      }
-
-      if (inventory.available_quantity < quantity) {
-        await transaction.rollback();
-        return res.status(409).json({ error: 'Quantidade indisponível em estoque' });
-      }
-
-      const newQuantity = inventory.available_quantity - quantity;
-
-      const reservation = await MedicationReservation.create(
-        {
-          patient_id: patientId,
-          medication_id,
-          health_unit_id,
-          quantity,
-          scheduled_pickup_at: scheduledPickupDate,
-          notes: notes || null,
-        },
-        { transaction }
-      );
-
-      await inventory.update(
-        {
-          available_quantity: newQuantity,
-          update_date: new Date(),
-        },
-        { transaction }
-      );
-
-      await transaction.commit();
-
-      const createdReservation = await MedicationReservation.findByPk(reservation.id, {
-        include: reservationIncludes,
-      });
-
-      return res.status(201).json({ reservation: createdReservation });
-    } catch (error) {
-      await transaction.rollback();
-      return res.status(500).json({ error: 'Não foi possível criar a reserva', details: error.message });
-    }
+    return res.status(201).json({ reservation: createdReservation });
   }
 
   async update(req, res) {

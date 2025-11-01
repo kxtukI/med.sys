@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken';
 import authConfig from '../../config/auth.js';
-
 import User from '../models/Users.js';
 import Patient from '../models/Patients.js';
 
@@ -18,51 +17,43 @@ class SessionsController {
       return res.status(400).json({ error: 'Senha é obrigatória' });
     }
 
-    const Patientwhere = {};
-    if (cpf) Patientwhere.cpf = cpf.replace(/\D/g, '');
-    if (sus_number) Patientwhere.sus_number = sus_number.replace(/\D/g, '');
+    const patientWhere = {};
+    if (cpf) patientWhere.cpf = cpf.replace(/\D/g, '');
+    if (sus_number) patientWhere.sus_number = sus_number.replace(/\D/g, '');
 
-    const Userwhere = {};
-    if (email) Userwhere.email = email.toLowerCase();
+    const userWhere = {};
+    if (email) userWhere.email = email.toLowerCase();
 
-    let data;
-    if (Object.keys(Patientwhere).length > 0) {
+    let user;
+    
+    if (Object.keys(patientWhere).length > 0) {
       const patient = await Patient.findOne({
-        where: Patientwhere,
-        include: [
-          {
-            model: User,
-            as: 'users',
-            required: true,
-          },
-        ],
+        where: patientWhere,
+        include: [{ model: User, as: 'users', required: true }],
       });
-
-      if (patient) {
-        data = patient.users;
-      }
+      user = patient?.users;
     } else {
-      data = await User.findOne({ where: Userwhere });
+      user = await User.findOne({ where: userWhere });
     }
 
-    if (!data) {
+    if (!user) {
       return res.status(401).json({ error: 'Usuário não encontrado' });
     }
 
-    if (!(await data.checkPassword(password))) {
+    if (!(await user.checkPassword(password))) {
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
 
-    const token = jwt.sign({ id: data.id }, authConfig.secret, {
+    const token = jwt.sign({ id: user.id }, authConfig.secret, {
       expiresIn: authConfig.expiresIn,
     });
 
-    return res.json({   
+    return res.json({
       user: {
-        id: data.id,
-        name: data.name,
-        email: data.email,
-        user_type: data.user_type,
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        user_type: user.user_type,
       },
       token,
     });
@@ -70,16 +61,15 @@ class SessionsController {
 
   async logout(req, res) {
     const authHeader = req.headers.authorization;
+    
     if (!authHeader) {
       return res.status(401).json({ error: 'Token não fornecido' });
     }
+
     const [, token] = authHeader.split(' ');
     tokenBlacklist.add(token);
+    
     return res.json({ message: 'Logout realizado com sucesso' });
-  }
-
-  static isTokenBlacklisted(token) {
-    return tokenBlacklist.has(token);
   }
 }
 

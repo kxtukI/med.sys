@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import * as Yup from 'yup';
+import { injectUserResourceId } from '../utils/authUtils.js';
 import Appointment from '../models/Appointments.js';
 import Patient from '../models/Patients.js';
 import Professional from '../models/Professionals.js';
@@ -71,7 +72,6 @@ class AppointmentsController {
 
   async create(req, res) {
     const schema = Yup.object().shape({
-      patient_id: Yup.number().required('ID do paciente é obrigatório'),
       professional_id: Yup.number().required('ID do profissional é obrigatório'),
       health_unit_id: Yup.number().required('ID da unidade de saúde é obrigatório'),
       date_time: Yup.date().required('Data e hora são obrigatórias'),
@@ -84,69 +84,79 @@ class AppointmentsController {
       return res.status(400).json({ error: 'Dados inválidos', details: validationErrors });
     }
 
+    const { professional_id, health_unit_id, date_time, specialty, status } = req.body;
+
+    const appointmentDate = new Date(date_time);
+    const now = new Date();
+    if (appointmentDate < now) {
+      return res.status(400).json({ error: 'Data inválida', details: 'Não é possível agendar para uma data no passado' });
+    }
+
+    const appointmentData = await injectUserResourceId(req, {
+      professional_id,
+      health_unit_id,
+      date_time,
+      specialty,
+      status: status || 'scheduled',
+    });
+
+    const { patient_id } = appointmentData;
+
+    const patient = await Patient.findByPk(patient_id);
+    if (!patient) {
+      return res.status(400).json({ error: 'Paciente não encontrado' });
+    }
+
+    const professional = await Professional.findByPk(professional_id);
+    if (!professional) {
+      return res.status(400).json({ error: 'Profissional não encontrado' });
+    }
+
+    const healthUnit = await HealthUnit.findByPk(health_unit_id);
+    if (!healthUnit) {
+      return res.status(400).json({ error: 'Unidade de saúde não encontrada' });
+    }
+
+    const existingAppointment = await Appointment.findOne({
+      where: {
+        professional_id,
+        date_time,
+        status: { [Op.ne]: 'canceled' }
+      },
+    });
+
+    if (existingAppointment) {
+      return res.status(409).json({ error: 'Conflito de agendamento', details: 'O profissional já possui uma consulta neste horário.' });
+    }
+
+    const isSpecialist = specialty && specialty.toLowerCase() !== 'clínico geral';
+    let referral = null;
+    if (isSpecialist) {
+      referral = await Referrals.findOne({
+        where: {
+          patient_id,
+          to_specialty: specialty,
+          status: 'approved',
+        },
+        order: [['id', 'DESC']],
+      });
+
+      if (!referral || referral.valid_until && new Date(referral.valid_until) < now) {
+        return res.status(403).json({
+          error: 'Encaminhamento obrigatório',
+          details: [`Não há encaminhamento aprovado para a especialidade ${specialty}`],
+        });
+      }
+    }
+
     const t = await sequelize.transaction();
 
     try {
-      const { patient_id, professional_id, health_unit_id, date_time, specialty, status } = req.body;
+      const appointment = await Appointment.create(appointmentData, { transaction: t });
 
-      const patient = await Patient.findByPk(patient_id);
-      if (!patient) {
-        return res.status(400).json({ error: 'Paciente não encontrado' });
-      }
-
-      const professional = await Professional.findByPk(professional_id);
-      if (!professional) {
-        return res.status(400).json({ error: 'Profissional não encontrado' });
-      }
-
-      const healthUnit = await HealthUnit.findByPk(health_unit_id);
-      if (!healthUnit) {
-        return res.status(400).json({ error: 'Unidade de saúde não encontrada' });
-      }
-
-      const existingAppointment = await Appointment.findOne({
-        where: {
-          professional_id,
-          date_time,
-          status: { [Op.ne]: 'canceled' }
-        },
-        transaction: t,
-      });
-
-      if (existingAppointment) {
-        return res.status(409).json({ error: 'Conflito de agendamento', details: 'O profissional já possui uma consulta neste horário.' }); // 409 Conflict
-      }
-
-      const isSpecialist = specialty && specialty.toLowerCase() !== 'clínico geral';
-      if (isSpecialist) {
-        const now = new Date();
-        const referral = await Referrals.findOne({
-          where: {
-            patient_id,
-            to_specialty: specialty,
-            status: 'approved',
-          },
-          order: [['id', 'DESC']],
-        });
-
-        if (!referral || referral.valid_until && new Date(referral.valid_until) < now) {
-          return res.status(403).json({
-            error: 'Encaminhamento obrigatório',
-            details: [`Não há encaminhamento aprovado para a especialidade ${specialty}`],
-          });
-        }
-
+      if (isSpecialist && referral) {
         await referral.update({ status: 'used' }, { transaction: t });
       }
-
-      const appointment = await Appointment.create({
-        patient_id,
-        professional_id,
-        health_unit_id,
-        date_time,
-        specialty,
-        status: status || 'scheduled',
-      }, { transaction: t });
 
       await t.commit();
 

@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import * as Yup from 'yup';
+import { injectUserResourceId } from '../utils/authUtils.js';
 import MedicalRecord from '../models/MedicalRecords.js';
 import Professional from '../models/Professionals.js';
 import Appointment from '../models/Appointments.js';
@@ -124,7 +125,6 @@ class MedicalRecordsController {
 
   async create(req, res) {
     const schema = Yup.object().shape({
-      professional_id: Yup.number().required('ID do profissional é obrigatório'),
       appointment_id: Yup.number().required('ID do agendamento é obrigatório'),
       observations: Yup.string().nullable(),
       prescribed_medications: Yup.string().nullable(),
@@ -132,13 +132,7 @@ class MedicalRecordsController {
       disease_history: Yup.string().nullable(),
       allergies: Yup.string().nullable(),
       treatment_plan: Yup.string().nullable(),
-      referral: Yup.object()
-        .shape({
-          to_specialty: Yup.string().required(),
-          notes: Yup.string().nullable(),
-          valid_until: Yup.date().nullable(),
-        })
-        .nullable(),
+      referral: Yup.object().nullable(),
     });
 
     if (!(await schema.isValid(req.body))) {
@@ -146,32 +140,17 @@ class MedicalRecordsController {
       return res.status(400).json({ error: 'Dados inválidos', details: validationErrors });
     }
 
-    const {
-      professional_id,
-      appointment_id,
-      observations,
-      prescribed_medications,
-      requested_exams,
-      disease_history,
-      allergies,
-      treatment_plan,
-      referral,
-    } = req.body;
+    const { appointment_id, observations, prescribed_medications, requested_exams, disease_history, allergies, treatment_plan, referral } = req.body;
 
-    const professional = await Professional.findByPk(professional_id);
-    if (!professional) {
-      return res.status(400).json({ error: 'Profissional não encontrado' });
-    }
-    const appointment = await Appointment.findByPk(appointment_id);
+    const appointment = await Appointment.findByPk(appointment_id, {
+      include: [{ model: Professional, as: 'professional' }, { model: Patient, as: 'patient' }],
+    });
+
     if (!appointment) {
       return res.status(400).json({ error: 'Agendamento não encontrado' });
     }
-    const existingRecord = await MedicalRecord.findOne({ where: { appointment_id } });
-    if (existingRecord) {
-      return res.status(400).json({ error: 'Já existe um prontuário para este agendamento' });
-    }
-    const medicalRecord = await MedicalRecord.create({
-      professional_id,
+
+    const recordData = await injectUserResourceId(req, {
       appointment_id,
       observations,
       prescribed_medications,
@@ -181,10 +160,12 @@ class MedicalRecordsController {
       treatment_plan,
     });
 
+    const medicalRecord = await MedicalRecord.create(recordData);
+
     if (referral && referral.to_specialty) {
       const createdReferral = await Referrals.create({
         patient_id: appointment.patient_id,
-        from_professional_id: professional.id,
+        from_professional_id: recordData.professional_id,
         to_specialty: referral.to_specialty,
         notes: referral.notes,
         valid_until: referral.valid_until,
