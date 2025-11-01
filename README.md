@@ -16,6 +16,7 @@ Um sistema completo de gestão médica com funcionalidades para pacientes, profi
 - ✅ Prontuários Médicos
 - ✅ Encaminhamentos 
 - ✅ Unidades de Saúde
+- ✅ Geolocalização de Unidades de Saúde
 - ✅ Validações com Yup
 - ✅ Upload de Fotos (Cloudinary)
 - ✅ Paginação em todas as listagens
@@ -114,7 +115,7 @@ POST   /password/reset                    # Reset de senha
 GET    /users                             # Listar usuários (Admin)
 GET    /patients                          # Listar pacientes
 GET    /professionals                     # Listar profissionais
-GET    /health_units                      # Listar unidades de saúde
+GET    /health_units                      # Listar unidades de saúde (com geolocalização)
 GET    /medications                       # Listar medicamentos
 GET    /medication_inventory              # Listar inventário
 GET    /medication_reservations           # Listar reservas
@@ -122,6 +123,31 @@ GET    /appointments                      # Listar agendamentos
 GET    /medical_records                   # Listar registros médicos
 GET    /referrals                         # Listar encaminhamentos
 ```
+
+### 🌍 Geolocalização de Unidades de Saúde
+
+O endpoint `/health_units` suporta cálculo de distância e ordenação por proximidade:
+
+**Exemplos de uso:**
+
+```bash
+# Usando coordenadas diretas
+GET /health_units?latitude=-23.5505&longitude=-46.6333
+
+# Usando CEP
+GET /health_units?zip_code=01310100
+
+# Usando endereço completo
+GET /health_units?address=Rua das Flores, 123&city=São Paulo&state=SP
+
+# Combinando com filtros
+GET /health_units?latitude=-23.5505&longitude=-46.6333&city=São Paulo
+```
+
+**Resposta inclui:**
+- `distance_km`: Distância em quilômetros
+- `distance_meters`: Distância em metros
+- Ordenação automática por proximidade
 
 ---
 
@@ -218,6 +244,15 @@ src/
 - Quantidade por medicamento e unidade
 - Controle de estoque
 - Rastreamento de movimentação
+
+### 7. Geolocalização de Unidades de Saúde
+- Cálculo de distância entre usuário e unidades
+- Ordenação automática por proximidade
+- Suporte a 3 métodos de localização:
+  - Coordenadas diretas (latitude/longitude)
+  - Endereço do perfil do paciente
+  - CEP ou endereço via query params
+- Retorna distância em quilômetros e metros
 
 ---
 

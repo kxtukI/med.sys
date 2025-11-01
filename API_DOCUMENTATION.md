@@ -1,5 +1,5 @@
 # Documentação da Med.Sys
-**Última atualização:** 29 de outubro de 2025
+**Última atualização:** 31 de outubro de 2025
 
 ## 📋 Índice
 1. [Introdução](#introdução)
@@ -24,6 +24,7 @@
 - **Token:** Sempre incluir no header `Authorization: Bearer {token}`
 - **Upload de Arquivos:** Use `multipart/form-data` para fotos
 - **Validações:** Todas as entidades possuem validações com Yup
+- **Geolocalização:** Suporte a cálculo de distância e ordenação por proximidade
 
 ## 🔐 Introdução
 
@@ -592,6 +593,20 @@ Authorization: Bearer {token}
 ### Listar Unidades de Saúde
 **GET** `/health_units?page=1&limit=10&city=São Paulo&state=SP`
 
+**Query Parameters:**
+- `page` (opcional): Número da página (padrão: 1)
+- `limit` (opcional): Itens por página (padrão: 10)
+- `name` (opcional): Filtrar por nome
+- `city` (opcional): Filtrar por cidade
+- `state` (opcional): Filtrar por estado
+
+**Parâmetros de Geolocalização (opcionais, em ordem de prioridade):**
+- `latitude` + `longitude`: Coordenadas do usuário
+- `zip_code`: CEP para geocoding 
+- `address` + `city` + `state`: Endereço completo para geocoding 
+
+**Nota:** Se o usuário estiver autenticado como paciente e tiver endereço cadastrado, a localização será usada automaticamente 
+
 **Response (200):**
 ```json
 {
@@ -605,15 +620,63 @@ Authorization: Bearer {token}
       "zip_code": "01310100",
       "phone": "1133334444",
       "working_hours": "08:00 - 18:00",
-      "photo_url": "https://cloudinary.com/..."
+      "photo_url": "https://cloudinary.com/...",
+      "latitude": "-23.55052000",
+      "longitude": "-46.63330800",
+      "distance_km": 2.5,
+      "distance_meters": 2500,
+      "has_distance": true
+    },
+    {
+      "id": 2,
+      "name": "Hospital Regional",
+      "address": "Av. Paulista, 1000",
+      "city": "São Paulo",
+      "state": "SP",
+      "distance_km": 5.8,
+      "distance_meters": 5800,
+      "has_distance": true
     }
   ],
-  "total": 1,
+  "total": 2,
   "limit": 10,
   "page": 1,
   "pages": 1
 }
 ```
+
+**Exemplos de Requisição com Geolocalização:**
+
+1. **Usando coordenadas diretas:**
+```
+GET /health_units?latitude=-23.5505&longitude=-46.6333
+```
+
+2. **Usando CEP:**
+```
+GET /health_units?zip_code=01310100
+```
+
+3. **Usando endereço completo:**
+```
+GET /health_units?address=Rua das Flores, 123&city=São Paulo&state=SP
+```
+
+4. **Combinando com filtros:**
+```
+GET /health_units?latitude=-23.5505&longitude=-46.6333&city=São Paulo&state=SP&name=Clínica
+```
+
+**Campos de Distância na Resposta:**
+- `distance_km`: Distância em quilômetros 
+- `distance_meters`: Distância em metros 
+- `has_distance`: Indica se a distância foi calculada 
+- `latitude` e `longitude`: Coordenadas da unidade 
+
+**Ordenação:**
+- Se localização fornecida: unidades ordenadas por distância (mais próxima primeiro)
+- Unidades sem coordenadas aparecem por último, ordenadas por nome
+- Se nenhuma localização fornecida: ordenação padrão por nome
 
 ---
 
@@ -657,8 +720,12 @@ state: SP
 zip_code: 01310100
 phone: 1133334444
 working_hours: 08:00 - 18:00
+latitude: -23.5505 (opcional)
+longitude: -46.6333 (opcional)
 photo: (arquivo de imagem)
 ```
+
+**Nota:** Os campos `latitude` e `longitude` são opcionais. Se fornecidos, ambos devem ser preenchidos. Latitude deve estar entre -90 e 90, longitude entre -180 e 180.
 
 **Response (201):**
 ```json
@@ -691,8 +758,12 @@ Content-Type: multipart/form-data
 name: Clínica Central - Matriz
 phone: 1133335555
 working_hours: 08:00 - 19:00
+latitude: -23.5505 (opcional)
+longitude: -46.6333 (opcional)
 photo: (arquivo de imagem - opcional)
 ```
+
+**Nota:** Os campos `latitude` e `longitude` podem ser atualizados. Se um for fornecido, o outro também deve ser fornecido.
 
 **Response (200):**
 ```json
