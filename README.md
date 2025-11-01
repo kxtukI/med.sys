@@ -276,6 +276,11 @@ Se cancelar ou expirar → estoque é reposto automaticamente
 
 ---
 
+### ⏱️ Formatação de Datas nas Respostas
+- Datas completas (`*_at`, `_timestamp`, `registration_date`, etc.) retornam no formato `DD/MM/AAAA HH:mm`
+- Datas simples (`*_date`) retornam no formato `DD/MM/AAAA`
+- Campos nulos permanecem como `null`
+
 ## 📊 Validações
 
 Todas as entidades possuem validações com **Yup**:

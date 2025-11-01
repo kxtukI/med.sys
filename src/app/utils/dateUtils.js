@@ -1,28 +1,18 @@
 export const formatDateToDateOnly = (dateString) => {
-  if (!dateString) {
-    throw new Error('Data não fornecida');
-  }
-
+  if (!dateString) return null;
+  
   const [day, month, year] = dateString.split('/');
+  if (!day || !month || !year) return dateString;
   
-  if (!day || !month || !year) {
-    throw new Error('Formato de data inválido. Use DD/MM/AAAA');
-  }
-
   const date = new Date(year, month - 1, day);
-  
-  if (isNaN(date.getTime())) {
-    throw new Error('Data inválida');
-  }
-
-  return date.toISOString().split('T')[0];
+  return isNaN(date.getTime()) ? dateString : date.toISOString().split('T')[0];
 };
 
 export const isValidDateFormat = (dateString) => {
   try {
     formatDateToDateOnly(dateString);
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 };
@@ -34,19 +24,50 @@ export const formatDateOnlyToDisplay = (dateInput) => {
   
   if (dateInput instanceof Date) {
     dateString = dateInput.toISOString().split('T')[0];
-  }
-
-  else if (typeof dateInput === 'string') {
+  } else if (typeof dateInput === 'string') {
     dateString = dateInput;
-  }
-  else {
-    dateString = String(dateInput);
+  } else {
+    return null;
   }
   
-  if (!dateString.includes('-') || dateString.split('-').length !== 3) {
-    return dateString; 
-  }
+  if (!dateString.match(/^\d{4}-\d{2}-\d{2}/)) return dateString;
   
   const [year, month, day] = dateString.split('-');
   return `${day}/${month}/${year}`;
+};
+
+export const formatDateTimeToDisplay = (dateInput) => {
+  if (!dateInput) return null;
+
+  const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  if (isNaN(date.getTime())) return null;
+
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
+};
+
+export const formatDateFieldsInObject = (obj) => {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(formatDateFieldsInObject);
+
+  const result = {};
+  
+  for (const [key, value] of Object.entries(obj)) {
+    if (key.endsWith('_at') || key.endsWith('_time') || key === 'registration_date') {
+      result[key] = formatDateTimeToDisplay(value);
+    } else if ((key.endsWith('_date') || key === 'birth_date') && !key.includes('_date_time')) {
+      result[key] = formatDateOnlyToDisplay(value);
+    } else if (typeof value === 'object' && value !== null) {
+      result[key] = formatDateFieldsInObject(value);
+    } else {
+      result[key] = value;
+    }
+  }
+  
+  return result;
 }; 

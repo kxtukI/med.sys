@@ -5,6 +5,7 @@ import cors from 'cors';
 
 import routes from './routes.js';
 import './database/index.js';
+import formatResponseMiddleware from './app/middlewares/formatResponseMiddleware.js';
 
 class App {
   constructor() {
@@ -17,6 +18,7 @@ class App {
   middlewares() {
     this.server.use(express.json());
     this.server.use(cors());
+    this.server.use(formatResponseMiddleware);
   }
 
   routes() {

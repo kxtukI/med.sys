@@ -18,7 +18,12 @@
 
 ## 📝 Notas Importantes
 
-- **Datas:** Use formato ISO `YYYY-MM-DDTHH:mm:ssZ`
+- **Datas:** Use formato ISO `YYYY-MM-DDTHH:mm:ssZ` nas requisições
+- **Formatação de Resposta:** 
+  - Campos com sufixo `_at` (ex: `created_at`, `reserved_at`) retornam como `DD/MM/AAAA HH:mm`
+  - Campos com sufixo `_date` (ex: `birth_date`, `appointment_date`) retornam como `DD/MM/AAAA`
+  - Campos `registration_date` e `date_time` retornam como `DD/MM/AAAA HH:mm`
+  - Todos os campos com datas nulas retornam como `null`
 - **Paginação:** Padrão é `page=1&limit=10`
 - **Filtros:** Todos os filtros são opcionais
 - **Token:** Sempre incluir no header `Authorization: Bearer {token}`
