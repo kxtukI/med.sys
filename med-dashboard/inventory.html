@@ -1,0 +1,118 @@
+<!-- Inventário -->
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventário - Med Dashboard</title>
+    
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="dashboard-page">
+
+    <div class="layout-container">
+
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Med.Sys</h2>
+            </div>
+            <nav class="sidebar-nav" aria-label="Menu Principal">
+                <ul>
+                    <li><a href="dashboard.html">Dashboard</a></li>
+                    <li><a href="users.html">Usuários</a></li>
+                    <li><a href="patients.html">Pacientes</a></li>
+                    <li><a href="medications.html">Medicamentos</a></li>
+                    <li><a href="inventory.html" class="active">Inventário</a></li>
+                    <li><a href="reservations.html">Reservas</a></li>
+                    <li><a href="appointments.html">Agendamentos</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+        <div class="main-content-wrapper">
+
+            <header class="navbar">
+                <div class="navbar-left">
+                    <button id="menu-toggle" class="btn-icon" aria-label="Abrir menu">
+                        <span class="hamburger-icon"></span>
+                    </button>
+                    <h1>Inventário de Medicamentos</h1>
+                </div>
+                <div class="navbar-right">
+                    <button id="logout-button" class="btn btn-secondary">Logout</button>
+                </div>
+            </header>
+
+            <main class="page-main-content">
+                
+                <div class="page-header">
+                    <h2>Estoque por Unidade</h2>
+                </div>
+
+                <section class="filter-controls">
+                    <div class="form-group">
+                        <label for="filter-unit">Filtrar por Unidade</label>
+                        <select id="filter-unit">
+                            <option value="">Todas as Unidades</option>
+                            <option value="unidade1">Unidade Central</option>
+                            <option value="unidade2">Unidade Leste</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filter-medication">Filtrar por Medicamento</label>
+                        <input type="text" id="filter-medication" placeholder="Digite o nome do medicamento...">
+                    </div>
+                    <button id="filter-btn" class="btn btn-secondary">Filtrar</button>
+                </section>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Medicamento</th>
+                                <th>Unidade</th>
+                                <th>Qtd. Disponível</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventory-table-body">
+                            <tr>
+                                <td>Dipirona Monoidratada</td>
+                                <td>Unidade Central</td>
+                                <td class="stock-qty">50</td>
+                                <td><span class="status-badge status-ok">Em estoque</span></td>
+                            </tr>
+                            <tr class="low-stock">
+                                <td>Amoxilina</td>
+                                <td>Unidade Central</td>
+                                <td class="stock-qty">8</td>
+                                <td><span class="status-badge status-low">Estoque Baixo</span></td>
+                            </tr>
+                            <tr>
+                                <td>Paracetamol</td>
+                                <td>Unidade Leste</td>
+                                <td class="stock-qty">120</td>
+                                <td><span class="status-badge status-ok">Em estoque</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <nav class="pagination" id="pagination-controls" aria-label="Paginação">
+                    <button class="btn btn-secondary" id="prev-page" disabled>Anterior</button>
+                    <span id="page-info">Página 1 de 1</span>
+                    <button class="btn btn-secondary" id="next-page" disabled>Próximo</button>
+                </nav>
+
+            </main>
+        </div>
+    </div>
+    
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+<!-- Agendamentos -->
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agendamentos - Med Dashboard</title>
+    
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="dashboard-page">
+
+    <div class="layout-container">
+
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Med.Sys</h2>
+            </div>
+            <nav class="sidebar-nav" aria-label="Menu Principal">
+                <ul>
+                    <li><a href="dashboard.html">Dashboard</a></li>
+                    <li><a href="users.html">Usuários</a></li>
+                    <li><a href="patients.html">Pacientes</a></li>
+                    <li><a href="medications.html">Medicamentos</a></li>
+                    <li><a href="inventory.html">Inventário</a></li>
+                    <li><a href="reservations.html">Reservas</a></li>
+                    <li><a href="appointments.html" class="active">Agendamentos</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+        <div class="main-content-wrapper">
+
+            <header class="navbar">
+                <div class="navbar-left">
+                    <button id="menu-toggle" class="btn-icon" aria-label="Abrir menu">
+                        <span class="hamburger-icon"></span>
+                    </button>
+                    <h1>Agendamentos</h1>
+                </div>
+                <div class="navbar-right">
+                    <button id="logout-button" class="btn btn-secondary">Logout</button>
+                </div>
+            </header>
+
+            <main class="page-main-content">
+                
+                <div class="page-header">
+                    <h2>Lista de Agendamentos</h2>
+                    <button id="add-appointment-btn" class="btn btn-primary">
+                        Novo Agendamento
+                    </button>
+                </div>
+
+                <section class="filter-controls">
+                    <div class="form-group">
+                        <label for="filter-status">Filtrar por Status</label>
+                        <select id="filter-status">
+                            <option value="">Todos os Status</option>
+                            <option value="scheduled">Agendado</option>
+                            <option value="completed">Concluído</option>
+                            <option value="canceled">Cancelado</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filter-date">Filtrar por Data</label>
+                        <input type="date" id="filter-date">
+                    </div>
+                    <button id="filter-btn" class="btn btn-secondary">Filtrar</button>
+                </section>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Paciente</th>
+                                <th>Profissional</th>
+                                <th>Data e Hora</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="appointments-table-body">
+                            </tbody>
+                    </table>
+                </div>
+                
+                <nav class="pagination" id="pagination-controls" aria-label="Paginação">
+                    <button class="btn btn-secondary" id="prev-page" disabled>Anterior</button>
+                    <span id="page-info">Página 1 de 1</span>
+                    <button class="btn btn-secondary" id="next-page" disabled>Próximo</button>
+                </nav>
+
+            </main>
+        </div>
+    </div>
+    
+    <div class="modal" id="appointment-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Novo Agendamento</h3>
+                <button id="close-modal-btn" class="btn-icon" data-modal-close>&times;</button>
+            </div>
+            
+            <form id="appointment-form" class="modal-form-grid">
+                <input type="hidden" id="appointment-id" name="id">
+
+                <div class="form-group">
+                    <label for="appointment-patient">Paciente</label>
+                    <select id="appointment-patient" name="patient_id" required>
+                        <option value="">Carregando pacientes...</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="appointment-professional">Profissional</label>
+                     <select id="appointment-professional" name="professional_id" required>
+                        <option value="">Carregando profissionais...</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="appointment-unit">Unidade de Saúde</label>
+                     <select id="appointment-unit" name="health_unit_id" required>
+                        <option value="">Carregando unidades...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="appointment-specialty">Especialidade</label>
+                    <input type="text" id="appointment-specialty" name="specialty" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="appointment-datetime">Data e Hora</label>
+                    <input type="datetime-local" id="appointment-datetime" name="date_time" required>
+                </div>
+                
+                 <div class="form-group">
+                    <label for="appointment-status">Status</label>
+                     <select id="appointment-status" name="status" required>
+                        <option value="scheduled">Agendado</option>
+                        <option value="completed">Concluído</option>
+                        <option value="canceled">Cancelado</option>
+                    </select>
+                </div>
+                
+                <div class="form-group-full-width">
+                     <p id="appointment-form-error" class="error-message"></p>
+                </div>
+
+                <div class="modal-footer form-group-full-width">
+                    <button type="button" class="btn btn-secondary" id="cancel-modal-btn" data-modal-close>Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="modal-overlay" id="modal-overlay"></div>
+
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
