@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usuários - Med Dashboard</title>
+    
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="dashboard-page">
+
+    <div class="layout-container">
+
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Med.Sys</h2>
+            </div>
+            <nav class="sidebar-nav" aria-label="Menu Principal">
+                <ul>
+                    <li><a href="dashboard.html">Dashboard</a></li>
+                    <li><a href="users.html" class="active">Usuários</a></li>
+                    <li><a href="patients.html">Pacientes</a></li>
+                    <li><a href="medications.html">Medicamentos</a></li>
+                    <li><a href="inventory.html">Inventário</a></li>
+                    <li><a href="reservations.html">Reservas</a></li>
+                    <li><a href="appointments.html">Agendamentos</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+        <div class="main-content-wrapper">
+
+            <header class="navbar">
+                <div class="navbar-left">
+                    <button id="menu-toggle" class="btn-icon" aria-label="Abrir menu">
+                        <span class="hamburger-icon"></span>
+                    </button>
+                    <h1>Gestão de Usuários</h1>
+                </div>
+                <div class="navbar-right">
+                    <button id="logout-button" class="btn btn-secondary">Logout</button>
+                </div>
+            </header>
+
+            <main class="page-main-content">
+                
+                <div class="page-header">
+                    <h2>Lista de Usuários</h2>
+                    <button id="add-professional-btn" class="btn btn-primary">
+                        Novo Profissional
+                    </button>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Email</th>
+                                <th>Função (Role)</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            </tbody>
+                    </table>
+                </div>
+
+                <nav class="pagination" id="pagination-controls" aria-label="Paginação">
+                    <button class="btn btn-secondary" id="prev-page" disabled>Anterior</button>
+                    <span id="page-info">Página 1 de 1</span>
+                    <button class="btn btn-secondary" id="next-page" disabled>Próximo</button>
+                </nav>
+
+            </main>
+        </div>
+    </div>
+
+    <div class="modal" id="user-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Editar Usuário</h3> 
+                <button id="close-modal-btn" class="btn-icon" data-modal-close>&times;</button>
+            </div>
+            
+            <form id="user-form" class="modal-form-grid">
+                <input type="hidden" id="user-id" name="id">
+
+                <div class="form-group">
+                    <label for="user-name">Nome Completo</label>
+                    <input type="text" id="user-name" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="user-email">Email</label>
+                    <input type="email" id="user-email" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="user-phone">Telefone</label>
+                    <input type="tel" id="user-phone" name="phone">
+                </div>
+
+                <div class="form-group-checkbox">
+                    <input type="checkbox" id="user-active" name="active">
+                    <label for="user-active">Usuário Ativo</label>
+                </div>
+
+                <p id="user-form-error" class="error-message"></p>
+
+                <div class="modal-footer form-group-full-width">
+                     <button type="button" class="btn btn-secondary" id="cancel-modal-btn" data-modal-close>Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal" id="professional-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="prof-modal-title">Novo Profissional</h3>
+                <button id="prof-close-modal-btn" class="btn-icon" data-modal-close>&times;</button>
+            </div>
+            
+            <form id="professional-form" class="modal-form-grid" enctype="multipart/form-data">
+                
+                <div class="form-group">
+                    <label for="prof-name">Nome Completo</label>
+                    <input type="text" id="prof-name" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="prof-email">Email</label>
+                    <input type="email" id="prof-email" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="prof-phone">Telefone</label>
+                    <input type="tel" id="prof-phone" name="phone" placeholder="Apenas números (10 ou 11 dígitos)" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="prof-password">Senha</label>
+                    <input type="password" id="prof-password" name="password" placeholder="Mín. 8 caracteres (letras e números)" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="prof-specialty">Especialidade</label>
+                    <input type="text" id="prof-specialty" name="specialty" placeholder="Ex: Ginecologista" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="prof-register">Registro Profissional</label>
+                    <input type="text" id="prof-register" name="professional_register" placeholder="Ex: CRM/123456" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="prof-type">Tipo</label>
+                    <select id="prof-type" name="professional_type" required>
+                        <option value="">Selecione o tipo</option>
+                        <option value="doctor">Doutor(a)</option>
+                        <option value="administrative">Administrativo</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="prof-photo">Foto</label>
+                    <input type="file" id="prof-photo" name="photo" accept="image/*">
+                </div>
+
+                <p id="professional-form-error" class="error-message form-group-full-width"></p>
+
+                <div class="modal-footer form-group-full-width">
+                    <button type="button" class="btn btn-secondary" id="prof-cancel-modal-btn" data-modal-close>Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Criar Profissional</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="modal-overlay" id="modal-overlay"></div>
+
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

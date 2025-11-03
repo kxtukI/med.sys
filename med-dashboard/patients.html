@@ -1,0 +1,189 @@
+<!-- Gestão de pacientes -->
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pacientes - Med Dashboard</title>
+    
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="dashboard-page">
+
+    <div class="layout-container">
+
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Med.Sys</h2>
+            </div>
+            <nav class="sidebar-nav" aria-label="Menu Principal">
+                <ul>
+                    <li><a href="dashboard.html">Dashboard</a></li>
+                    <li><a href="users.html">Usuários</a></li>
+                    <li><a href="patients.html" class="active">Pacientes</a></li>
+                    <li><a href="medications.html">Medicamentos</a></li>
+                    <li><a href="inventory.html">Inventário</a></li>
+                    <li><a href="reservations.html">Reservas</a></li>
+                    <li><a href="appointments.html">Agendamentos</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+        <div class="main-content-wrapper">
+
+            <header class="navbar">
+                <div class="navbar-left">
+                    <button id="menu-toggle" class="btn-icon" aria-label="Abrir menu">
+                        <span class="hamburger-icon"></span>
+                    </button>
+                    <h1>Gestão de Pacientes</h1>
+                </div>
+                <div class="navbar-right">
+                    <button id="logout-button" class="btn btn-secondary">Logout</button>
+                </div>
+            </header>
+
+            <main class="page-main-content">
+                
+                <div class="page-header">
+                    <h2>Lista de Pacientes</h2>
+                    <button id="add-patient-btn" class="btn btn-primary">
+                        Novo Paciente
+                    </button>
+                </div>
+
+                <section class="filter-controls">
+                    <div class="form-group">
+                        <label for="filter-name">Filtrar por Nome</label>
+                        <input type="text" id="filter-name" placeholder="Digite o nome do paciente...">
+                    </div>
+                    <div class="form-group">
+                        <label for="filter-cpf">Filtrar por CPF</label>
+                        <input type="text" id="filter-cpf" placeholder="000.000.000-00">
+                    </div>
+                    <button id="filter-btn" class="btn btn-secondary">Filtrar</button>
+                </section>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>CPF</th>
+                                <th>Telefone</th>
+                                <th>Data de Nasc.</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="patients-table-body">
+                            <tr>
+                                <td>Fulano da Silva</td>
+                                <td>123.456.789-00</td>
+                                <td>(11) 98765-4321</td>
+                                <td>25/10/1985</td>
+                                <td class="actions">
+                                    <button class="btn-icon btn-edit" aria-label="Editar">✏️</button>
+                                    <button class="btn-icon btn-delete" aria-label="Deletar">🗑️</button>
+                                </td>
+                            </tr>
+                            </tbody>
+                    </table>
+                </div>
+
+                <nav class="pagination" id="pagination-controls" aria-label="Paginação">
+                    <button class="btn btn-secondary" id="prev-page" disabled>Anterior</button>
+                    <span id="page-info">Página 1 de 1</span>
+                    <button class="btn btn-secondary" id="next-page" disabled>Próximo</button>
+                </nav>
+
+            </main>
+        </div>
+    </div>
+
+<div class="modal" id="patient-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Novo Paciente</h3>
+                <button id="close-modal-btn" class="btn-icon" data-modal-close>&times;</button>
+            </div>
+            
+            <form id="patient-form" class="modal-form-grid">
+                <input type="hidden" id="patient-id" name="id">
+
+                <div class="form-group">
+                    <label for="patient-name">Nome Completo</label>
+                    <input type="text" id="patient-name" name="name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="patient-email">Email</label>
+                    <input type="email" id="patient-email" name="email">
+                </div>
+                
+                <div class="form-group">
+                    <label for="patient-phone">Telefone (Celular)</label>
+                    <input type="tel" id="patient-phone" name="phone" placeholder="(99) 99999-9999" required>
+                </div>
+                
+                <div class="form-group field-for-create">
+                    <label for="patient-cpf">CPF</label>
+                    <input type="text" id="patient-cpf" name="cpf" placeholder="000.000.000-00" required>
+                </div>
+                
+                <div class="form-group field-for-create">
+                    <label for="patient-password">Senha (para o paciente)</label>
+                    <input type="password" id="patient-password" name="password" required>
+                    <small>Crie uma senha temporária para o paciente.</small>
+                </div>
+
+                <div class="form-group field-for-create">
+                    <label for="patient-birthdate">Data de Nascimento</label>
+                    <input type="date" id="patient-birthdate" name="birth_date" required>
+                </div>
+
+                <div class="form-group field-for-create">
+                    <label for="patient-sus">Número SUS</label>
+                    <input type="text" id="patient-sus" name="sus_number" placeholder="123456789012345">
+                </div>
+
+                <div class="form-group">
+                    <label for="patient-address">Endereço</label>
+                    <input type="text" id="patient-address" name="address">
+                </div>
+                
+                <div class="form-group">
+                    <label for="patient-city">Cidade</label>
+                    <input type="text" id="patient-city" name="city">
+                </div>
+                
+                <div class="form-group">
+                    <label for="patient-state">Estado (Sigla)</label>
+                    <input type="text" id="patient-state" name="state" maxlength="2" placeholder="SP">
+                </div>
+                
+                <div class="form-group">
+                    <label for="patient-zipcode">CEP</label>
+                    <input type="text" id="patient-zipcode" name="zip_code" placeholder="01310-100">
+                </div>
+                
+                <div class="form-group-full-width">
+                     <p id="patient-form-error" class="error-message"></p>
+                </div>
+
+                <div class="modal-footer form-group-full-width">
+                    <button type="button" class="btn btn-secondary" id="cancel-modal-btn" data-modal-close>Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="modal-overlay" id="modal-overlay"></div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
