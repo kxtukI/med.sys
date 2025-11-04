@@ -117,6 +117,24 @@ class AppointmentsController {
       return res.status(400).json({ error: 'Unidade de saúde não encontrada' });
     }
 
+    const professionalHealthUnit = await Professional.findByPk(professional_id, {
+      include: [
+        {
+          association: 'health_units',
+          where: { id: health_unit_id },
+          through: { where: { status: 'active' } },
+          required: false,
+        },
+      ],
+    });
+
+    if (!professionalHealthUnit || professionalHealthUnit.health_units.length === 0) {
+      return res.status(400).json({
+        error: 'Profissional não disponível',
+        details: 'O profissional selecionado não trabalha nesta unidade de saúde',
+      });
+    }
+
     const existingAppointment = await Appointment.findOne({
       where: {
         professional_id,

@@ -53,7 +53,7 @@ class Appointments extends Model {
           defaultValue: 'scheduled',
         },
         schedule_date: {
-          type: DataTypes.TIME,
+          type: DataTypes.DATE,
           allowNull: false,
           defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
         },
@@ -62,6 +62,16 @@ class Appointments extends Model {
         sequelize,
         modelName: 'Appointments',
         tableName: 'appointments',
+        hooks: {
+          afterCreate: async (appointment) => {
+            const { default: MedicalRecords } = await import('./MedicalRecords.js');
+            await MedicalRecords.create({
+              professional_id: appointment.professional_id,
+              appointment_id: appointment.id,
+              record_date: new Date(),
+            });
+          },
+        },
       }
     );
   }

@@ -59,6 +59,18 @@ class HealthUnits extends Model {
   }
 
   static associate(models) {
+    this.belongsToMany(models.Professionals, {
+      through: models.ProfessionalHealthUnits,
+      foreignKey: 'health_unit_id',
+      otherKey: 'professional_id',
+      as: 'professionals',
+    });
+
+    this.hasMany(models.ProfessionalHealthUnits, {
+      foreignKey: 'health_unit_id',
+      as: 'professional_health_units',
+    });
+
     this.hasMany(models.MedicationReservations, { foreignKey: 'health_unit_id', as: 'medication_reservations' });
   }
 }

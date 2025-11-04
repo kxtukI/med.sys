@@ -3,10 +3,11 @@ import * as Yup from 'yup';
 import Professionals from '../models/Professionals.js';
 import User from '../models/Users.js';
 import HealthUnit from '../models/HealthUnits.js';
+import ProfessionalHealthUnits from '../models/ProfessionalHealthUnits.js';
 
 class ProfessionalsController {
   async index(req, res) {
-    const { name, professional_register, professional_type, specialty, status } = req.query;
+    const { name, professional_register, professional_type, specialty, status, health_unit_id } = req.query;
     const { limit, offset } = req.pagination;
 
     const where = {};
@@ -17,36 +18,46 @@ class ProfessionalsController {
     if (specialty) where.specialty = { [Op.iLike]: `%${specialty}%` };
     if (status) where.status = status;
 
+    const userInclude = {
+      model: User,
+      as: 'user',
+      attributes: ['id', 'name', 'email', 'user_type', 'active'],
+      required: true,
+    };
+
+    if (Object.keys(userWhere).length > 0) {
+      userInclude.where = userWhere;
+    }
+
+    const includes = [
+      userInclude,
+      {
+        association: 'health_units',
+        attributes: ['id', 'name', 'city', 'state'],
+        through: { attributes: ['status', 'start_date'] },
+      },
+    ];
+
+    if (health_unit_id) {
+      includes[1].where = { id: health_unit_id };
+      includes[1].required = true;
+    }
+
     const data = await Professionals.findAndCountAll({
       where,
-      include: [
-        {
-          model: User,
-          as: 'user',
-          attributes: ['id', 'name', 'email', 'user_type', 'active'],
-          where: userWhere,
-          required: true,
-        },
-        {
-          model: HealthUnit,
-          as: 'health_unit',
-          attributes: ['id', 'name', 'city', 'state'],
-        },
-      ],
-      order: [
-        [{ model: User, as: 'user' }, 'active', 'DESC'],
-        [{ model: User, as: 'user' }, 'registration_date', 'DESC'],
-      ],
+      include: includes,
+      order: [['id', 'DESC']],
       limit,
       offset,
       attributes: ['id', 'professional_register', 'professional_type', 'specialty', 'photo_url', 'status'],
+      distinct: true,
     });
 
     return res.json({
       data: data.rows.map((prof) => ({
         ...prof.toJSON(),
         user: prof.user,
-        health_unit: prof.health_unit,
+        health_units: prof.health_units,
       })),
       total: data.count,
       limit,
@@ -65,8 +76,9 @@ class ProfessionalsController {
           attributes: { exclude: ['password_hash'] },
         },
         {
-          model: HealthUnit,
-          as: 'health_unit',
+          association: 'health_units',
+          attributes: ['id', 'name', 'address', 'city', 'state', 'phone'],
+          through: { attributes: ['status', 'start_date', 'end_date'] },
         },
       ],
     });
@@ -85,7 +97,7 @@ class ProfessionalsController {
       professional_register: Yup.string().required('Registro profissional é obrigatório'),
       professional_type: Yup.string().oneOf(['doctor', 'administrative']).required('Tipo é obrigatório'),
       specialty: Yup.string().nullable(),
-      health_unit_id: Yup.number().nullable(),
+      health_unit_ids: Yup.array().of(Yup.number()).min(1, 'Pelo menos uma unidade de saúde é obrigatória'),
       photo_url: Yup.string().nullable(),
     });
 
@@ -94,36 +106,46 @@ class ProfessionalsController {
       return res.status(400).json({ error: 'Dados inválidos', details: validationErrors });
     }
 
-    const { name, email, phone, password, professional_register, professional_type, specialty, health_unit_id } = req.body;
+    const { name, email, phone, password, professional_register, professional_type, specialty, health_unit_ids } = req.body;
 
     const existingProfessional = await Professionals.findOne({ where: { professional_register } });
     if (existingProfessional) {
       return res.status(400).json({ error: 'Registro profissional já cadastrado.' });
     }
 
-    const professionalData = { professional_register, professional_type, specialty, health_unit_id };
+    const professionalData = { professional_register, professional_type, specialty };
 
     if (req.file && req.file.cloudinaryUrl) {
       professionalData.photo_url = req.file.cloudinaryUrl;
     }
 
-    const user = await User.create({ name, email, phone, password, user_type: 'professional' });
-    const professional = await Professionals.create({ user_id: user.id, ...professionalData });
+    try {
+      const user = await User.create({ name, email, phone, password, user_type: 'professional' });
+      const professional = await Professionals.create({ user_id: user.id, ...professionalData });
 
-    return res.json({
-      professional: {
-        id: professional.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        professional_register: professional.professional_register,
-        professional_type: professional.professional_type,
-        specialty: professional.specialty,
-        health_unit_id: professional.health_unit_id,
-        photo_url: professional.photo_url,
-        status: professional.status,
-      },
-    });
+      const healthUnitRelationships = health_unit_ids.map(unitId => ({
+        professional_id: professional.id,
+        health_unit_id: unitId,
+        status: 'active',
+      }));
+
+      await ProfessionalHealthUnits.bulkCreate(healthUnitRelationships);
+
+      const createdProfessional = await Professionals.findByPk(professional.id, {
+        include: [
+          { model: User, as: 'user', attributes: { exclude: ['password_hash'] } },
+          {
+            association: 'health_units',
+            attributes: ['id', 'name', 'city'],
+            through: { attributes: ['status'] },
+          },
+        ],
+      });
+
+      return res.json({ professional: createdProfessional });
+    } catch (error) {
+      return res.status(400).json({ error: 'Erro ao criar profissional', details: error.message });
+    }
   }
 
   async update(req, res) {
@@ -135,7 +157,7 @@ class ProfessionalsController {
       professional_register: Yup.string().optional(),
       professional_type: Yup.string().oneOf(['doctor', 'administrative']).optional(),
       specialty: Yup.string().optional(),
-      health_unit_id: Yup.number().optional(),
+      health_unit_ids: Yup.array().of(Yup.number()).optional(),
       photo_url: Yup.string().optional(),
       status: Yup.string().oneOf(['active', 'inactive']).optional(),
     });
@@ -145,7 +167,7 @@ class ProfessionalsController {
       return res.status(400).json({ error: 'Dados inválidos', details: validationErrors });
     }
 
-    const { name, email, phone, password, professional_register, professional_type, specialty, health_unit_id, photo_url, status } = req.body;
+    const { name, email, phone, password, professional_register, professional_type, specialty, health_unit_ids, photo_url, status } = req.body;
     const { id } = req.params;
 
     const professional = await Professionals.findByPk(id);
@@ -161,30 +183,52 @@ class ProfessionalsController {
       professional_register: professional_register ?? professional.professional_register,
       professional_type: professional_type ?? professional.professional_type,
       specialty: specialty ?? professional.specialty,
-      health_unit_id: health_unit_id ?? professional.health_unit_id,
       status: status ?? professional.status,
     };
+
+    if (photo_url) {
+      professionalUpdateData.photo_url = photo_url;
+    }
 
     if (req.file && req.file.cloudinaryUrl) {
       professionalUpdateData.photo_url = req.file.cloudinaryUrl;
     }
 
-    await user.update({
-      name: name ?? user.name,
-      email: email ?? user.email,
-      phone: phone ?? user.phone,
-      password: password ?? user.password,
-    });
-    await professional.update(professionalUpdateData);
+    try {
+      await user.update({
+        name: name ?? user.name,
+        email: email ?? user.email,
+        phone: phone ?? user.phone,
+        password: password ?? user.password,
+      });
+      await professional.update(professionalUpdateData);
+      if (health_unit_ids && Array.isArray(health_unit_ids)) {
+        await ProfessionalHealthUnits.destroy({ where: { professional_id: id } });
 
-    const updatedProfessional = await Professionals.findByPk(id, {
-      include: [
-        { model: User, as: 'user', attributes: { exclude: ['password_hash'] } },
-        { model: HealthUnit, as: 'health_unit' },
-      ],
-    });
+        const healthUnitRelationships = health_unit_ids.map(unitId => ({
+          professional_id: id,
+          health_unit_id: unitId,
+          status: 'active',
+        }));
 
-    return res.json({ professional: updatedProfessional });
+        await ProfessionalHealthUnits.bulkCreate(healthUnitRelationships);
+      }
+
+      const updatedProfessional = await Professionals.findByPk(id, {
+        include: [
+          { model: User, as: 'user', attributes: { exclude: ['password_hash'] } },
+          {
+            association: 'health_units',
+            attributes: ['id', 'name', 'city', 'state'],
+            through: { attributes: ['status', 'start_date'] },
+          },
+        ],
+      });
+
+      return res.json({ professional: updatedProfessional });
+    } catch (error) {
+      return res.status(400).json({ error: 'Erro ao atualizar profissional', details: error.message });
+    }
   }
 
   async delete(req, res) {

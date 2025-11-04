@@ -16,13 +16,6 @@ class Professionals extends Model {
           onUpdate: 'CASCADE',
           onDelete: 'CASCADE',
         },
-        health_unit_id: {
-          type: DataTypes.INTEGER,
-          allowNull: true,
-          references: { model: 'health_units', key: 'id' },
-          onUpdate: 'CASCADE',
-          onDelete: 'SET NULL',
-        },
         professional_register: {
           type: DataTypes.STRING,
           allowNull: false,
@@ -56,10 +49,19 @@ class Professionals extends Model {
 
   static associate(models) {
     this.belongsTo(models.Users, { foreignKey: 'user_id', as: 'user' });
-    this.belongsTo(models.HealthUnits, {
-      foreignKey: 'health_unit_id',
-      as: 'health_unit',
+    
+    this.belongsToMany(models.HealthUnits, {
+      through: models.ProfessionalHealthUnits,
+      foreignKey: 'professional_id',
+      otherKey: 'health_unit_id',
+      as: 'health_units',
     });
+
+    this.hasMany(models.ProfessionalHealthUnits, {
+      foreignKey: 'professional_id',
+      as: 'professional_health_units',
+    });
+
     this.hasMany(models.MedicalRecords, {
       foreignKey: 'professional_id',
       as: 'medical_records',

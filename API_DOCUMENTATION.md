@@ -593,6 +593,84 @@ Authorization: Bearer {token}
 
 ---
 
+### ℹ️ Nova Funcionalidade
+
+Profissionais agora podem trabalhar em **múltiplas unidades de saúde**!
+
+**Mudanças importantes:**
+- ✅ `health_unit_ids` (array) ao criar profissional - pode vincular a várias unidades
+- ✅ `health_unit_id` (query parameter) para filtrar por unidade ao listar
+- ✅ Resposta inclui `health_units` com detalhes de todas as unidades
+
+### Filtrar Profissionais por Unidade
+
+**GET** `/professionals?health_unit_id=1`
+
+Exemplo com múltiplos filtros:
+```bash
+GET /professionals?specialty=Cardiologia&health_unit_id=1
+GET /professionals?health_unit_id=2&status=active
+```
+
+**Response inclui:**
+```json
+{
+  "data": [
+    {
+      "professional_id": 1,
+      "specialty": "Cardiologia",
+      "user": {
+        "name": "Dr. João Silva"
+      },
+      "health_units": [
+        {
+          "id": 1,
+          "name": "Unidade A",
+          "city": "São Paulo"
+        },
+        {
+          "id": 2,
+          "name": "Unidade B",
+          "city": "São Paulo"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Criar Profissional em Múltiplas Unidades
+
+**POST** `/professionals`
+
+**Body (form-data)**
+```
+name: Dr. João Silva
+email: joao@email.com
+phone: 11987654321
+password: Senha@123
+professional_register: CRM123456
+professional_type: doctor
+specialty: Cardiologia
+health_unit_ids: [1, 2, 3]
+photo: (arquivo de imagem)
+```
+
+**Note:** `health_unit_ids` é um **array** com IDs das unidades (antes era apenas `health_unit_id`)
+
+### Atualizar Unidades de um Profissional
+
+**PUT** `/professionals/:id`
+
+**Body (form-data):**
+```
+health_unit_ids: [1, 2]
+```
+
+Isto substituirá TODAS as unidades do profissional pelas novas.
+
+---
+
 ## 🏢 Unidades de Saúde
 
 ### Listar Unidades de Saúde
@@ -1829,7 +1907,6 @@ Authorization: Bearer {token}
 ```
 
 ---
-
 ### Atualizar Encaminhamento (Profissional/Admin)
 **PUT** `/referrals/:id`
 
@@ -1860,3 +1937,40 @@ Authorization: Bearer {token}
   }
 }
 ```
+
+---
+
+### ⚠️ Nova Validação
+
+Ao criar um agendamento, o sistema **valida automaticamente** se o profissional realmente trabalha na unidade especificada!
+
+**POST** `/appointments`
+
+**Body:**
+```json
+{
+  "professional_id": 1,
+  "health_unit_id": 1,
+  "date_time": "2025-10-30T14:00:00Z",
+  "specialty": "Cardiologia"
+}
+```
+
+**Validações automáticas:**
+- ✓ Profissional existe?
+- ✓ Unidade existe?
+- ✓ **NOVO: Profissional trabalha nesta unidade?**
+- ✓ Data/hora não é no passado?
+- ✓ Médico já tem consulta neste horário?
+
+**Erros possíveis:**
+```json
+{
+  "error": "Profissional não disponível",
+  "details": "O profissional selecionado não trabalha nesta unidade de saúde"
+}
+```
+
+Quando um agendamento é criado, um `MedicalRecord` é **criado automaticamente**!
+
+---
