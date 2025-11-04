@@ -9,6 +9,7 @@
 // -----------------------------------------------------------------------------
 
 const BASE_URL = 'https://med-sys-3z00.onrender.com';
+//const BASE_URL = 'http://localhost:3000';
 
 /**
  * Função principal para requisições 'fetch'.

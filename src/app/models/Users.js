@@ -55,7 +55,7 @@ class Users extends Model {
         modelName: 'Users',
         tableName: 'users',
         hooks: {
-          beforeSave: async (user) => {
+          beforeValidate: async (user) => {
             if (user.password) {
               user.password_hash = await bcrypt.hash(user.password, 8);
             }
