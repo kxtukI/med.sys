@@ -49,6 +49,16 @@ class Users extends Model {
           allowNull: false,
           defaultValue: true,
         },
+        health_unit_id: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          references: {
+            model: 'health_units',
+            key: 'id',
+          },
+          onUpdate: 'CASCADE',
+          onDelete: 'SET NULL',
+        },
       },
       {
         sequelize,
@@ -73,6 +83,10 @@ class Users extends Model {
     this.hasMany(models.Patients, {
       foreignKey: 'user_id',
       as: 'patients',
+    });
+    this.belongsTo(models.HealthUnits, {
+      foreignKey: 'health_unit_id',
+      as: 'health_unit',
     });
   }
 

@@ -3,3 +3,4 @@ dist/
 .eslint.config.js
 .prettierrc
 .env
+utils.md

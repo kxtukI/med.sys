@@ -72,6 +72,11 @@ class HealthUnits extends Model {
     });
 
     this.hasMany(models.MedicationReservations, { foreignKey: 'health_unit_id', as: 'medication_reservations' });
+    
+    this.hasMany(models.Users, {
+      foreignKey: 'health_unit_id',
+      as: 'admins',
+    });
   }
 }
 

@@ -5,6 +5,7 @@ import User from '../models/Users.js';
 import nodemailer from 'nodemailer';
 import twilio from 'twilio';
 import Patient from '../models/Patients.js';
+import HealthUnit from '../models/HealthUnits.js';
 
 const recoveryCodes = new Map();
 
@@ -47,11 +48,37 @@ class UsersController {
     return res.json({ user });
   }
 
+  async create(req, res) {
+    const { name, email, password, user_type, phone, health_unit_id } = req.body;
+    const user = await User.create({ name, email, password, user_type, phone, health_unit_id });
+    return res.json({ user });
+  }
+
   async update(req, res) {
     const { id } = req.params;
+    const { email, name, phone } = req.body;
+    
     const user = await User.findByPk(id);
-    await user.update(req.body);
-    return res.json({ user });
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    if (email && email !== user.email) {
+      const existingUser = await User.findOne({ where: { email } });
+      if (existingUser) {
+        return res.status(400).json({ error: 'Este email já está em uso' });
+      }
+    }
+
+    try {
+      await user.update(req.body);
+      return res.json({ user });
+    } catch (error) {
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        return res.status(400).json({ error: 'Email já está em uso' });
+      }
+      return res.status(500).json({ error: 'Erro ao atualizar usuário' });
+    }
   }
 
   async delete(req, res) {
@@ -163,6 +190,84 @@ class UsersController {
     recoveryCodes.delete(targetUserId);
 
     return res.json({ message: 'Senha redefinida com sucesso' });
+  }
+
+  async listAdminsByHealthUnit(req, res) {
+    const { health_unit_id } = req.params;
+
+    const healthUnit = await HealthUnit.findByPk(health_unit_id, {
+      include: [
+        {
+          model: User,
+          as: 'admins',
+          attributes: { exclude: ['password_hash'] },
+          where: { user_type: 'admin' },
+        },
+      ],
+    });
+
+    if (!healthUnit) {
+      return res.status(404).json({ error: 'Unidade de saúde não encontrada' });
+    }
+
+    return res.json({
+      health_unit: healthUnit.name,
+      admins: healthUnit.admins,
+      total: healthUnit.admins.length,
+    });
+  }
+
+  async assignHealthUnit(req, res) {
+    const { id } = req.params;
+    const { health_unit_id } = req.body;
+
+    const user = await User.findByPk(id);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    if (user.user_type !== 'admin') {
+      return res.status(400).json({ error: 'Apenas usuários admin podem ser atribuídos a unidades' });
+    }
+
+    if (health_unit_id) {
+      const healthUnit = await HealthUnit.findByPk(health_unit_id);
+      if (!healthUnit) {
+        return res.status(404).json({ error: 'Unidade de saúde não encontrada' });
+      }
+    }
+
+    try {
+      await user.update({ health_unit_id });
+      return res.json({ 
+        message: health_unit_id ? 'Admin atribuído à unidade com sucesso' : 'Admin convertido para super admin',
+        user: await User.findByPk(id, {
+          attributes: { exclude: ['password_hash'] },
+          include: [{ model: HealthUnit, as: 'health_unit', attributes: ['id', 'name'] }],
+        }),
+      });
+    } catch (error) {
+      return res.status(500).json({ error: 'Erro ao atribuir unidade' });
+    }
+  }
+
+  async removeHealthUnit(req, res) {
+    const { id } = req.params;
+
+    const user = await User.findByPk(id);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    if (user.user_type !== 'admin') {
+      return res.status(400).json({ error: 'Apenas usuários admin podem ter unidades removidas' });
+    }
+
+    await user.update({ health_unit_id: null });
+    return res.json({ 
+      message: 'Admin convertido para super admin com sucesso',
+      user: await User.findByPk(id, { attributes: { exclude: ['password_hash'] } }),
+    });
   }
 }
 

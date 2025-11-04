@@ -11,7 +11,10 @@ class MedicationInventoryController {
 
     const where = {};
     if (medication_id) where.medication_id = medication_id;
-    if (health_unit_id) where.health_unit_id = health_unit_id;
+    
+    const unitId = req.userHealthUnitId || health_unit_id;
+    if (unitId) where.health_unit_id = unitId;
+    
     if (available_quantity) where.available_quantity = { [Op.gte]: parseInt(available_quantity) };
 
     const data = await MedicationInventory.findAndCountAll({
@@ -66,7 +69,7 @@ class MedicationInventoryController {
   async create(req, res) {
     const schema = Yup.object().shape({
       medication_id: Yup.number().required('ID do medicamento é obrigatório'),
-      health_unit_id: Yup.number().required('ID da unidade de saúde é obrigatório'),
+      health_unit_id: Yup.number().nullable(), 
       available_quantity: Yup.number().required('Quantidade disponível é obrigatória').min(0, 'Quantidade não pode ser negativa'),
     });
 
@@ -76,19 +79,25 @@ class MedicationInventoryController {
     }
 
     const { medication_id, health_unit_id, available_quantity } = req.body;
+    
+    const unitId = req.userHealthUnitId || health_unit_id;
+    if (!unitId) {
+      return res.status(400).json({ error: 'ID da unidade de saúde é obrigatório' });
+    }
+    
     const medication = await Medication.findByPk(medication_id);
     if (!medication) {
       return res.status(400).json({ error: 'Medicamento não encontrado' });
     }
-    const healthUnit = await HealthUnit.findByPk(health_unit_id);
+    const healthUnit = await HealthUnit.findByPk(unitId);
     if (!healthUnit) {
       return res.status(400).json({ error: 'Unidade de saúde não encontrada' });
     }
-    const existingInventory = await MedicationInventory.findOne({ where: { medication_id, health_unit_id } });
+    const existingInventory = await MedicationInventory.findOne({ where: { medication_id, health_unit_id: unitId } });
     if (existingInventory) {
       return res.status(400).json({ error: 'Já existe um registro para este medicamento nesta unidade de saúde' });
     }
-    const inventory = await MedicationInventory.create({ medication_id, health_unit_id, available_quantity });
+    const inventory = await MedicationInventory.create({ medication_id, health_unit_id: unitId, available_quantity });
     return res.json({ inventory });
   }
 

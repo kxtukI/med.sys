@@ -15,6 +15,7 @@ import ReferralsController from './app/controllers/ReferralsController.js';
 import authMiddleware from './app/middlewares/authMiddleware.js';
 import authorizationMiddleware, { checkOwnershipOrAdmin } from './app/middlewares/authorizationMiddleware.js';
 import { checkMedicalRecordOwnership, checkAppointmentOwnership } from './app/middlewares/ownershipMiddleware.js';
+import checkHealthUnitAccess from './app/middlewares/adminHealthUnitMiddleware.js';
 import SessionsController from './app/controllers/SessionsController.js';
 
 const routes = new Router();
@@ -30,7 +31,11 @@ routes.use(authMiddleware);
 routes.get('/users', authorizationMiddleware(['admin']), paginationMiddleware, UsersController.index);
 routes.get('/users/:id', authorizationMiddleware(['admin']), UsersController.show);
 routes.put('/users/:id', authorizationMiddleware(['admin']), UsersController.update);
+routes.post('/users', authorizationMiddleware(['admin']), UsersController.create);
 routes.delete('/users/:id', authorizationMiddleware(['admin']), UsersController.delete);
+routes.get('/users/admins/by-health-unit/:health_unit_id', authorizationMiddleware(['admin']), UsersController.listAdminsByHealthUnit);
+routes.put('/users/:id/assign-health-unit', authorizationMiddleware(['admin']), UsersController.assignHealthUnit);
+routes.put('/users/:id/remove-health-unit', authorizationMiddleware(['admin']), UsersController.removeHealthUnit);
 
 routes.get('/patients', authorizationMiddleware(['professional', 'admin']), paginationMiddleware, PatientsControllers.index);
 routes.get('/patients/:id', authorizationMiddleware(['professional', 'admin']), PatientsControllers.show);
@@ -46,27 +51,27 @@ routes.delete('/professionals/:id', authorizationMiddleware(['admin']), Professi
 
 routes.get('/health_units', paginationMiddleware, HealthUnitsController.index);
 routes.get('/health_units/:id', HealthUnitsController.show);
-routes.post('/health_units', authorizationMiddleware(['admin']), upload.single('photo'), uploadToCloudinary, HealthUnitsController.create);
-routes.put('/health_units/:id', authorizationMiddleware(['admin']), upload.single('photo'), uploadToCloudinary, HealthUnitsController.update);
-routes.delete('/health_units/:id', authorizationMiddleware(['admin']), HealthUnitsController.delete);
+routes.post('/health_units', authorizationMiddleware(['admin']), checkHealthUnitAccess, upload.single('photo'), uploadToCloudinary, HealthUnitsController.create);
+routes.put('/health_units/:id', authorizationMiddleware(['admin']), checkHealthUnitAccess, upload.single('photo'), uploadToCloudinary, HealthUnitsController.update);
+routes.delete('/health_units/:id', authorizationMiddleware(['admin']), checkHealthUnitAccess, HealthUnitsController.delete);
 
 routes.get('/medications', paginationMiddleware, MedicationsController.index);
 routes.get('/medications/:id', MedicationsController.show);
-routes.post('/medications', authorizationMiddleware(['admin']), upload.single('photo'), uploadToCloudinary, MedicationsController.create);
-routes.put('/medications/:id', authorizationMiddleware(['admin']), upload.single('photo'), uploadToCloudinary, MedicationsController.update);
-routes.delete('/medications/:id', authorizationMiddleware(['admin']), MedicationsController.delete);
+routes.post('/medications', authorizationMiddleware(['admin']), checkHealthUnitAccess, upload.single('photo'), uploadToCloudinary, MedicationsController.create);
+routes.put('/medications/:id', authorizationMiddleware(['admin']), checkHealthUnitAccess, upload.single('photo'), uploadToCloudinary, MedicationsController.update);
+routes.delete('/medications/:id', authorizationMiddleware(['admin']), checkHealthUnitAccess, MedicationsController.delete);
 
 routes.get('/medication_inventory', paginationMiddleware, MedicationInventoryController.index);
 routes.get('/medication_inventory/:id', MedicationInventoryController.show);
-routes.post('/medication_inventory', authorizationMiddleware(['professional', 'admin']), MedicationInventoryController.create);
-routes.put('/medication_inventory/:id', authorizationMiddleware(['professional', 'admin']), MedicationInventoryController.update);
-routes.delete('/medication_inventory/:id', authorizationMiddleware(['admin']), MedicationInventoryController.delete);
+routes.post('/medication_inventory', authorizationMiddleware(['professional', 'admin']), checkHealthUnitAccess, MedicationInventoryController.create);
+routes.put('/medication_inventory/:id', authorizationMiddleware(['professional', 'admin']), checkHealthUnitAccess, MedicationInventoryController.update);
+routes.delete('/medication_inventory/:id', authorizationMiddleware(['admin']), checkHealthUnitAccess, MedicationInventoryController.delete);
 
 routes.get('/medication_reservations', authorizationMiddleware(['patient', 'professional', 'admin']), paginationMiddleware, MedicationReservationsController.index);
 routes.get('/medication_reservations/:id', authorizationMiddleware(['patient', 'professional', 'admin']), MedicationReservationsController.show);
-routes.post('/medication_reservations', authorizationMiddleware(['patient', 'professional', 'admin']), MedicationReservationsController.create);
-routes.put('/medication_reservations/:id', authorizationMiddleware(['patient', 'professional', 'admin']), MedicationReservationsController.update);
-routes.delete('/medication_reservations/:id', authorizationMiddleware(['patient', 'professional', 'admin']), MedicationReservationsController.delete);
+routes.post('/medication_reservations', authorizationMiddleware(['patient', 'professional', 'admin']), checkHealthUnitAccess, MedicationReservationsController.create);
+routes.put('/medication_reservations/:id', authorizationMiddleware(['patient', 'professional', 'admin']), checkHealthUnitAccess, MedicationReservationsController.update);
+routes.delete('/medication_reservations/:id', authorizationMiddleware(['patient', 'professional', 'admin']), checkHealthUnitAccess, MedicationReservationsController.delete);
 
 routes.get('/medical_records', paginationMiddleware, MedicalRecordsController.index);
 routes.get('/medical_records/patient/:patient_id', paginationMiddleware, MedicalRecordsController.findByPatient);
