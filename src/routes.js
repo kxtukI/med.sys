@@ -81,6 +81,7 @@ routes.put('/medical_records/:id', authorizationMiddleware(['professional', 'adm
 routes.delete('/medical_records/:id', authorizationMiddleware(['admin']), MedicalRecordsController.delete);
 
 routes.get('/appointments', paginationMiddleware, AppointmentsController.index);
+routes.get('/appointments/calendar', authorizationMiddleware(['professional', 'admin']), AppointmentsController.calendar);
 routes.get('/appointments/:id', AppointmentsController.show);
 routes.post('/appointments', AppointmentsController.create);
 routes.put('/appointments/:id', checkAppointmentOwnership, AppointmentsController.update);

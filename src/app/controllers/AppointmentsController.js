@@ -232,6 +232,146 @@ class AppointmentsController {
 
     return res.json({ message: 'Agendamento cancelado com sucesso', appointment });
   }
+
+  async calendar(req, res) {
+    const { professional_id, health_unit_id, start_date, end_date, status } = req.query;
+    
+    let user = req.currentUser;
+    if (!user && req.userId) {
+      user = await User.findByPk(req.userId);
+      if (!user) {
+        return res.status(401).json({ error: 'Usuário não encontrado' });
+      }
+    }
+    
+    if (!user) {
+      return res.status(401).json({ error: 'Não autenticado' });
+    }
+
+    let targetProfessionalId = professional_id;
+
+    if (user.user_type === 'professional') {
+      const professional = await Professional.findOne({ where: { user_id: user.id } });
+      if (!professional) {
+        return res.status(404).json({ error: 'Profissional não encontrado' });
+      }
+      targetProfessionalId = professional.id;
+    }
+
+    if (!targetProfessionalId) {
+      return res.status(400).json({ error: 'professional_id é obrigatório' });
+    }
+
+    const professional = await Professional.findByPk(targetProfessionalId, {
+      include: [{ model: User, as: 'user', attributes: ['id', 'name'] }],
+    });
+    if (!professional) {
+      return res.status(404).json({ error: 'Profissional não encontrado' });
+    }
+
+    const now = new Date();
+    const defaultStartDate = new Date(now.setDate(now.getDate() - now.getDay())); 
+    defaultStartDate.setHours(0, 0, 0, 0);
+    
+    const defaultEndDate = new Date(defaultStartDate);
+    defaultEndDate.setDate(defaultEndDate.getDate() + 6); 
+    defaultEndDate.setHours(23, 59, 59, 999);
+
+    const startDate = start_date ? new Date(start_date) : defaultStartDate;
+    const endDate = end_date ? new Date(end_date) : defaultEndDate;
+
+    if (startDate > endDate) {
+      return res.status(400).json({ error: 'Data inicial deve ser anterior à data final' });
+    }
+
+    const daysDiff = (endDate - startDate) / (1000 * 60 * 60 * 24);
+    if (daysDiff > 30) {
+      return res.status(400).json({ error: 'Intervalo máximo permitido é de 30 dias' });
+    }
+
+    const where = {
+      professional_id: targetProfessionalId,
+      date_time: {
+        [Op.between]: [startDate, endDate],
+      },
+    };
+
+    if (health_unit_id) {
+      where.health_unit_id = health_unit_id;
+    }
+
+    if (status) {
+      where.status = status;
+    }
+
+    const appointments = await Appointment.findAll({
+      where,
+      include: [
+        {
+          model: Patient,
+          as: 'patient',
+          include: [{ model: User, as: 'users', attributes: ['id', 'name'] }],
+        },
+        {
+          model: HealthUnit,
+          as: 'health_unit',
+          attributes: ['id', 'name', 'address'],
+        },
+      ],
+      order: [['date_time', 'ASC']],
+    });
+
+    const calendar = {};
+    appointments.forEach(appointment => {
+      const date = new Date(appointment.date_time);
+      const dateKey = date.toISOString().split('T')[0]; 
+      
+      if (!calendar[dateKey]) {
+        calendar[dateKey] = {
+          date: dateKey,
+          day_name: date.toLocaleDateString('pt-BR', { weekday: 'long' }),
+          day_number: date.getDate(),
+          appointments: [],
+        };
+      }
+
+      calendar[dateKey].appointments.push({
+        id: appointment.id,
+        time: date.toTimeString().split(' ')[0].substring(0, 5), // HH:mm
+        date_time: appointment.date_time,
+        specialty: appointment.specialty,
+        status: appointment.status,
+        patient: appointment.patient?.users?.name || 'N/A',
+        health_unit: appointment.health_unit?.name || 'N/A',
+      });
+    });
+
+    const calendarArray = Object.values(calendar).sort((a, b) => 
+      new Date(a.date) - new Date(b.date)
+    );
+
+    const stats = {
+      total: appointments.length,
+      scheduled: appointments.filter(a => a.status === 'scheduled').length,
+      completed: appointments.filter(a => a.status === 'completed').length,
+      canceled: appointments.filter(a => a.status === 'canceled').length,
+    };
+
+    return res.json({
+      professional: {
+        id: professional.id,
+        name: professional.user?.name || 'N/A',
+        specialty: professional.specialty,
+      },
+      period: {
+        start_date: startDate.toISOString().split('T')[0],
+        end_date: endDate.toISOString().split('T')[0],
+        days: Math.floor(daysDiff) + 1,
+      },
+      calendar: calendarArray,
+      stats,
+    });
+  }
 }
 
 export default new AppointmentsController();

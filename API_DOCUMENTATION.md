@@ -1,5 +1,5 @@
 # Documentação da Med.Sys
-**Última atualização:** 31 de outubro de 2025
+**Última atualização:** 04 de novembro de 2025
 
 ## 📋 Índice
 1. [Introdução](#introdução)
@@ -1519,6 +1519,123 @@ Authorization: Bearer {token}
 }
 ```
 
+---
+
+### Calendário de Agendamentos (Profissional/Admin)
+**GET** `/appointments/calendar`
+
+Retorna os agendamentos de um profissional organizados em formato de calendário (semanal ou diário), agrupados por dia com estatísticas.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Query Parameters:**
+- `professional_id` (opcional): ID do profissional. Se não fornecido e o usuário for profissional, usa automaticamente o profissional logado
+- `health_unit_id` (opcional): Filtrar por unidade de saúde
+- `start_date` (opcional): Data inicial no formato `YYYY-MM-DD`. Padrão: início da semana atual (domingo)
+- `end_date` (opcional): Data final no formato `YYYY-MM-DD`. Padrão: fim da semana atual (sábado)
+- `status` (opcional): Filtrar por status (`scheduled`, `completed`, `canceled`)
+
+**Notas:**
+- **Profissionais**: Se não fornecer `professional_id`, verá automaticamente seus próprios agendamentos
+- **Admins**: Devem fornecer `professional_id` para ver agendamentos de outros profissionais
+- **Intervalo padrão**: Se não especificar datas, retorna a semana atual (domingo a sábado)
+- **Limite máximo**: Intervalo máximo permitido é de 30 dias
+
+**Exemplos de Requisição:**
+
+1. **Profissional vendo seus próprios agendamentos (semana atual):**
+```
+GET /appointments/calendar
+```
+
+2. **Admin vendo agendamentos de um profissional específico:**
+```
+GET /appointments/calendar?professional_id=1
+```
+
+3. **Com intervalo de datas personalizado:**
+```
+GET /appointments/calendar?professional_id=1&start_date=2025-11-04&end_date=2025-11-10
+```
+
+4. **Filtrando por unidade e status:**
+```
+GET /appointments/calendar?professional_id=1&health_unit_id=1&status=scheduled
+```
+
+**Response (200):**
+```json
+{
+  "professional": {
+    "id": 1,
+    "name": "Dr. João Silva",
+    "specialty": "Cardiologia"
+  },
+  "period": {
+    "start_date": "2025-11-04",
+    "end_date": "2025-11-10",
+    "days": 7
+  },
+  "calendar": [
+    {
+      "date": "2025-11-04",
+      "day_name": "segunda-feira",
+      "day_number": 4,
+      "appointments": [
+        {
+          "id": 1,
+          "time": "10:00",
+          "date_time": "2025-11-04T10:00:00.000Z",
+          "specialty": "Cardiologia",
+          "status": "scheduled",
+          "patient": "João Paciente",
+          "health_unit": "Unidade A"
+        },
+        {
+          "id": 2,
+          "time": "14:00",
+          "date_time": "2025-11-04T14:00:00.000Z",
+          "specialty": "Cardiologia",
+          "status": "scheduled",
+          "patient": "Maria Paciente",
+          "health_unit": "Unidade A"
+        }
+      ]
+    },
+    {
+      "date": "2025-11-05",
+      "day_name": "terça-feira",
+      "day_number": 5,
+      "appointments": []
+    },
+    {
+      "date": "2025-11-06",
+      "day_name": "quarta-feira",
+      "day_number": 6,
+      "appointments": [
+        {
+          "id": 3,
+          "time": "09:00",
+          "date_time": "2025-11-06T09:00:00.000Z",
+          "specialty": "Cardiologia",
+          "status": "completed",
+          "patient": "Pedro Paciente",
+          "health_unit": "Unidade B"
+        }
+      ]
+    }
+  ],
+  "stats": {
+    "total": 3,
+    "scheduled": 2,
+    "completed": 1,
+    "canceled": 0
+  }
+}
+```
 ---
 
 ### Criar Agendamento (Profissional/Admin)
