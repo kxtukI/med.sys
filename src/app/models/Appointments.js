@@ -63,13 +63,13 @@ class Appointments extends Model {
         modelName: 'Appointments',
         tableName: 'appointments',
         hooks: {
-          afterCreate: async (appointment) => {
+          afterCreate: async (appointment, options) => {
             const { default: MedicalRecords } = await import('./MedicalRecords.js');
             await MedicalRecords.create({
               professional_id: appointment.professional_id,
               appointment_id: appointment.id,
               record_date: new Date(),
-            });
+            }, { transaction: options.transaction });
           },
         },
       }

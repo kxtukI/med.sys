@@ -77,6 +77,7 @@ class AppointmentsController {
       date_time: Yup.date().required('Data e hora são obrigatórias'),
       specialty: Yup.string().required('Especialidade é obrigatória'),
       status: Yup.string().oneOf(['scheduled', 'canceled', 'completed']).default('scheduled'),
+      patient_id: Yup.number().nullable() 
     });
 
     if (!(await schema.isValid(req.body))) {
@@ -84,7 +85,18 @@ class AppointmentsController {
       return res.status(400).json({ error: 'Dados inválidos', details: validationErrors });
     }
 
-    const { professional_id, health_unit_id, date_time, specialty, status } = req.body;
+    const { professional_id, health_unit_id, date_time, specialty, status, patient_id } = req.body;
+    const currentUser = req.currentUser;
+
+    let patientId = patient_id;
+    if (currentUser.user_type === 'patient' || !patientId) {
+      const PatientModel = (await import('../models/Patients.js')).default;
+      const patient = await PatientModel.findOne({ where: { user_id: currentUser.id } });
+      if (!patient) {
+        return res.status(404).json({ error: 'Paciente não encontrado para este usuário' });
+      }
+      patientId = patient.id;
+    }
 
     const appointmentDate = new Date(date_time);
     const now = new Date();
@@ -93,6 +105,7 @@ class AppointmentsController {
     }
 
     const appointmentData = await injectUserResourceId(req, {
+      patient_id: patientId,
       professional_id,
       health_unit_id,
       date_time,
@@ -100,9 +113,7 @@ class AppointmentsController {
       status: status || 'scheduled',
     });
 
-    const { patient_id } = appointmentData;
-
-    const patient = await Patient.findByPk(patient_id);
+    const patient = await Patient.findByPk(patientId);
     if (!patient) {
       return res.status(400).json({ error: 'Paciente não encontrado' });
     }
@@ -177,6 +188,49 @@ class AppointmentsController {
       }
 
       await t.commit();
+
+      const Notifications = (await import('../models/Notifications.js')).default;
+      const _appointmentDate = new Date(appointment.date_time);
+      function setToTodayAtEight(dateTarget) {
+        const day = new Date(dateTarget);
+        day.setHours(8, 0, 0, 0);
+        return day;
+      }
+      const oneDayBefore = new Date(_appointmentDate.getTime() - 24 * 60 * 60 * 1000);
+      const onDayMorning = setToTodayAtEight(_appointmentDate);
+      const oneHourBefore = new Date(_appointmentDate.getTime() - 60 * 60 * 1000);
+      await Notifications.bulkCreate([
+        {
+          target_type: 'patient',
+          target_id: appointment.patient_id,
+          appointment_id: appointment.id,
+          type: 'appointment_reminder',
+          message: `Lembrete: sua consulta é amanhã às ${_appointmentDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`,
+          channel: 'sms',
+          status: 'pending',
+          scheduled_for: oneDayBefore
+        },
+        {
+          target_type: 'patient',
+          target_id: appointment.patient_id,
+          appointment_id: appointment.id,
+          type: 'appointment_reminder',
+          message: `Lembrete: sua consulta é hoje às ${_appointmentDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`,
+          channel: 'sms',
+          status: 'pending',
+          scheduled_for: onDayMorning
+        },
+        {
+          target_type: 'patient',
+          target_id: appointment.patient_id,
+          appointment_id: appointment.id,
+          type: 'appointment_reminder',
+          message: `Lembrete: falta 1 hora para sua consulta.`,
+          channel: 'sms',
+          status: 'pending',
+          scheduled_for: oneHourBefore
+        }
+      ]);
 
       const newAppointment = await Appointment.findByPk(appointment.id, {
         include: fullAppointmentIncludes

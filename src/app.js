@@ -6,6 +6,7 @@ import cors from 'cors';
 import routes from './routes.js';
 import './database/index.js';
 import formatResponseMiddleware from './app/middlewares/formatResponseMiddleware.js';
+import { startScheduler } from './app/services/Scheduler.js';
 
 class App {
   constructor() {
@@ -13,6 +14,7 @@ class App {
     this.middlewares();
     this.routes();
     this.exceptionHandler();
+    startScheduler();
   }
 
   middlewares() {

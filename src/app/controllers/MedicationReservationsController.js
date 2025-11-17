@@ -52,7 +52,7 @@ class MedicationReservationsController {
     if (medication_id) where.medication_id = parseInt(medication_id, 10);
     if (health_unit_id) where.health_unit_id = parseInt(health_unit_id, 10);
     if (status) {
-      if (!RESERVATION_STATUS.includes(status)) {
+      if (!RESERVATION_STATUSES.includes(status)) {
         return res.status(400).json({ error: 'Status inválido' });
       }
       where.status = status;
@@ -136,7 +136,7 @@ class MedicationReservationsController {
         .required('Horário de retirada é obrigatório')
         .transform((value, originalValue) => (originalValue ? value : null)),
       notes: Yup.string().max(500, 'Notas devem ter no máximo 500 caracteres').nullable(),
-      patient_id: Yup.number().nullable(),
+      patient_id: Yup.number().nullable(), 
     });
 
     if (!(await schema.isValid(req.body))) {
@@ -154,12 +154,10 @@ class MedicationReservationsController {
         return res.status(404).json({ error: 'Paciente não encontrado para este usuário' });
       }
       patientId = patient.id;
-    } else if (!patientId) {
-      return res.status(400).json({ error: 'ID do paciente é obrigatório para profissionais' });
-    }
-
-    if (!patientId) {
-      return res.status(400).json({ error: 'Paciente é obrigatório' });
+    } else {
+      if (!patientId) {
+        return res.status(400).json({ error: 'ID do paciente é obrigatório para profissionais ou admins' });
+      }
     }
 
     const scheduledPickupDate = new Date(scheduled_pickup_at);

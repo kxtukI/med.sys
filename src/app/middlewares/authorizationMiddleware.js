@@ -23,8 +23,13 @@ const authorizationMiddleware = (allowedRoles = []) => {
 };
 
 export const checkOwnershipOrAdmin = async (req, res, next) => {
-  const userId = req.userId;
+  const { currentUser, userId } = req;
   const resourceId = req.params.id || req.params.professional_id || req.params.appointment_id;
+
+  if (currentUser && (currentUser.user_type === 'admin')) {
+    return next();
+  }
+
   const resource = req.route?.path?.includes('professional') ? 'professional' : 'appointment';
 
   if (resource === 'professional') {

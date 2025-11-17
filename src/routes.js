@@ -17,6 +17,10 @@ import authorizationMiddleware, { checkOwnershipOrAdmin } from './app/middleware
 import { checkMedicalRecordOwnership, checkAppointmentOwnership } from './app/middlewares/ownershipMiddleware.js';
 import checkHealthUnitAccess from './app/middlewares/adminHealthUnitMiddleware.js';
 import SessionsController from './app/controllers/SessionsController.js';
+import NotificationsController from './app/controllers/NotificationsController.js';
+
+import { processPendingNotifications } from './app/services/NotificationJobService.js';
+import { processLateAppointments } from './app/services/LateAppointmentJobService.js';
 
 const routes = new Router();
 
@@ -81,15 +85,37 @@ routes.put('/medical_records/:id', authorizationMiddleware(['professional', 'adm
 routes.delete('/medical_records/:id', authorizationMiddleware(['admin']), MedicalRecordsController.delete);
 
 routes.get('/appointments', paginationMiddleware, AppointmentsController.index);
-routes.get('/appointments/calendar', authorizationMiddleware(['professional', 'admin']), AppointmentsController.calendar);
-routes.get('/appointments/:id', AppointmentsController.show);
-routes.post('/appointments', AppointmentsController.create);
-routes.put('/appointments/:id', checkAppointmentOwnership, AppointmentsController.update);
-routes.delete('/appointments/:id', authorizationMiddleware(['admin']), AppointmentsController.delete);
+routes.get('/appointments/calendar', authorizationMiddleware(['patient', 'professional', 'admin']), AppointmentsController.calendar);
+routes.get('/appointments/:id', authorizationMiddleware(['patient', 'professional', 'admin']), AppointmentsController.show);
+routes.post('/appointments', authorizationMiddleware(['patient', 'professional', 'admin']), AppointmentsController.create);
+routes.put('/appointments/:id', authorizationMiddleware(['patient', 'professional', 'admin']), checkAppointmentOwnership, AppointmentsController.update);
+routes.delete('/appointments/:id', authorizationMiddleware(['patient', 'professional', 'admin']), AppointmentsController.delete);
 
 routes.get('/referrals', authorizationMiddleware(['professional', 'admin']), ReferralsController.index);
 routes.get('/referrals/:id', authorizationMiddleware(['professional', 'admin']), ReferralsController.show);
 routes.post('/referrals', authorizationMiddleware(['professional', 'admin']), ReferralsController.create);
 routes.put('/referrals/:id', authorizationMiddleware(['professional', 'admin']), ReferralsController.update);
+
+routes.get('/notifications', NotificationsController.index);
+routes.post('/notifications/:id/resend', NotificationsController.resend);
+//routes.post('/appointments/:id/cancel-by-token', NotificationsController.cancelByToken);
+
+routes.post('/jobs/run-pending-notifications', async (req, res) => {
+    try {
+        await processPendingNotifications();
+        res.status(200).json({ message: 'Job de notificações pendentes executado com sucesso.' });
+    } catch (error) {
+        res.status(500).json({ error: 'Falha ao executar o job.', details: error.message });
+    }
+});
+
+routes.post('/jobs/run-late-appointments', async (req, res) => {
+    try {
+        await processLateAppointments();
+        res.status(200).json({ message: 'Job de agendamentos atrasados executado com sucesso.' });
+    } catch (error) {
+        res.status(500).json({ error: 'Falha ao executar o job.', details: error.message });
+    }
+});
 
 export default routes;

@@ -1,5 +1,5 @@
 # Documentação da Med.Sys
-**Última atualização:** 04 de novembro de 2025
+**Última atualização:** 06 de novembro de 2025
 
 ## 📋 Índice
 1. [Introdução](#introdução)
@@ -2057,8 +2057,6 @@ Authorization: Bearer {token}
 
 ---
 
-### ⚠️ Nova Validação
-
 Ao criar um agendamento, o sistema **valida automaticamente** se o profissional realmente trabalha na unidade especificada!
 
 **POST** `/appointments`
@@ -2076,7 +2074,7 @@ Ao criar um agendamento, o sistema **valida automaticamente** se o profissional 
 **Validações automáticas:**
 - ✓ Profissional existe?
 - ✓ Unidade existe?
-- ✓ **NOVO: Profissional trabalha nesta unidade?**
+- ✓ Profissional trabalha nesta unidade?
 - ✓ Data/hora não é no passado?
 - ✓ Médico já tem consulta neste horário?
 
@@ -2091,3 +2089,49 @@ Ao criar um agendamento, o sistema **valida automaticamente** se o profissional 
 Quando um agendamento é criado, um `MedicalRecord` é **criado automaticamente**!
 
 ---
+
+## 📲 Notificações SMS Automáticas e Manuais
+
+### Listar notificações
+**GET** `/notifications`
+Query params: `target_type`, `target_id`, `type`, `status`
+
+### Reenvio manual de notificação
+**POST** `/notifications/:id/resend`
+Reenvia notificação SMS se não enviada
+
+### Cancelar agendamento por atraso via token
+**POST** `/appointments/:id/cancel-by-token?token=...`
+Cancela a consulta se token estiver válido
+
+### Funcionamento dos lembretes e alerta de atraso
+- **Ao agendar consulta:** São criadas notificações automáticas SMS do tipo `appointment_reminder` para:
+    - 1 dia antes
+    - No dia da consulta (08h)
+    - 1h antes do horário marcado
+- **Se paciente atrasar > 15min:** Um job cria notificação `appointment_late` com SMS contendo link para cancelamento seguro via token
+- O job `NotificationJobService` envia automaticamente todas as notificações `pending` cujo horário chegou
+
+#### Exemplo de resposta: Listar
+```json
+{
+  "notifications": [
+    {
+      "id": 42,
+      "appointment_id": 10,
+      "target_type": "patient",
+      "type": "appointment_reminder",
+      "status": "pending",
+      "scheduled_for": "2025-11-10T08:00:00Z"
+    }
+  ]
+}
+```
+
+#### Resposta do cancelamento por atraso:
+```json
+{
+  "success": true,
+  "message": "Consulta cancelada com sucesso."
+}
+```
