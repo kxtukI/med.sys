@@ -14,7 +14,7 @@ import AppointmentsController from './app/controllers/AppointmentsController.js'
 import ReferralsController from './app/controllers/ReferralsController.js';
 import authMiddleware from './app/middlewares/authMiddleware.js';
 import authorizationMiddleware, { checkOwnershipOrAdmin } from './app/middlewares/authorizationMiddleware.js';
-import { checkMedicalRecordOwnership, checkAppointmentOwnership } from './app/middlewares/ownershipMiddleware.js';
+import { checkMedicalRecordOwnership, checkAppointmentOwnership, checkPatientOwnership } from './app/middlewares/ownershipMiddleware.js';
 import checkHealthUnitAccess from './app/middlewares/adminHealthUnitMiddleware.js';
 import SessionsController from './app/controllers/SessionsController.js';
 import NotificationsController from './app/controllers/NotificationsController.js';
@@ -42,10 +42,10 @@ routes.put('/users/:id/assign-health-unit', authorizationMiddleware(['admin']), 
 routes.put('/users/:id/remove-health-unit', authorizationMiddleware(['admin']), UsersController.removeHealthUnit);
 
 routes.get('/patients', authorizationMiddleware(['professional', 'admin']), paginationMiddleware, PatientsControllers.index);
-routes.get('/patients/:id', authorizationMiddleware(['professional', 'admin']), PatientsControllers.show);
-routes.put('/patients/:id', authorizationMiddleware(['admin']), PatientsControllers.update);
+routes.get('/patients/:id', authorizationMiddleware(['professional', 'admin', 'patient']), PatientsControllers.show);
+routes.put('/patients/:id', authorizationMiddleware(['admin', 'patient']), checkPatientOwnership, PatientsControllers.update);
 routes.delete('/patients/:id', authorizationMiddleware(['admin']), PatientsControllers.delete);
-routes.get('/patients/:id/medical_history', authorizationMiddleware(['professional', 'admin']), PatientsControllers.getMedicalHistory);
+routes.get('/patients/:id/medical_history', authorizationMiddleware(['professional', 'admin', 'patient']), PatientsControllers.getMedicalHistory);
 
 routes.get('/professionals', paginationMiddleware, ProfessionalsController.index);
 routes.get('/professionals/:id', ProfessionalsController.show);

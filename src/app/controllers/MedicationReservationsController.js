@@ -165,7 +165,7 @@ class MedicationReservationsController {
       where: { medication_id, health_unit_id },
     });
 
-    if (!inventory || inventory.quantity < quantity) {
+    if (!inventory || inventory.available_quantity < quantity) {
       return res.status(400).json({ error: 'Quantidade insuficiente em estoque' });
     }
 
@@ -179,7 +179,7 @@ class MedicationReservationsController {
       status: 'reserved',
     });
 
-    await inventory.decrement('quantity', { by: quantity });
+    await inventory.decrement('available_quantity', { by: quantity });
 
     const createdReservation = await MedicationReservation.findByPk(reservation.id, {
       include: reservationIncludes,

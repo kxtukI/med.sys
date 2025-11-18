@@ -70,4 +70,50 @@ export const formatDateFieldsInObject = (obj) => {
   }
   
   return result;
+};
+
+export const isWithinWorkingHours = (workingHours, appointmentDateTime) => {
+  if (!workingHours || !workingHours.trim()) {
+    return { isValid: true };
+  }
+
+  if (!appointmentDateTime || !(appointmentDateTime instanceof Date) || isNaN(appointmentDateTime.getTime())) {
+    return { isValid: false, message: 'Data e hora do agendamento inválidas' };
+  }
+
+  const timePattern = /(\d{1,2}):(\d{2})\s*[-ààs]\s*(\d{1,2}):(\d{2})/i;
+  const match = workingHours.match(timePattern);
+
+  if (!match) {
+    return { isValid: true };
+  }
+
+  const startHour = parseInt(match[1], 10);
+  const startMinute = parseInt(match[2], 10);
+  const endHour = parseInt(match[3], 10);
+  const endMinute = parseInt(match[4], 10);
+
+  if (startHour < 0 || startHour > 23 || startMinute < 0 || startMinute > 59 ||
+      endHour < 0 || endHour > 23 || endMinute < 0 || endMinute > 59) {
+    return { isValid: true };
+  }
+
+  const appointmentHour = appointmentDateTime.getHours();
+  const appointmentMinute = appointmentDateTime.getMinutes();
+
+  const startMinutes = startHour * 60 + startMinute;
+  const endMinutes = endHour * 60 + endMinute;
+  const appointmentMinutes = appointmentHour * 60 + appointmentMinute;
+
+  if (appointmentMinutes >= startMinutes && appointmentMinutes <= endMinutes) {
+    return { isValid: true };
+  }
+
+  const startTimeStr = `${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}`;
+  const endTimeStr = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
+
+  return {
+    isValid: false,
+    message: `O agendamento deve ser feito entre ${startTimeStr} e ${endTimeStr}`
+  };
 }; 

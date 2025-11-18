@@ -116,7 +116,7 @@ Solicita código de recuperação via email ou SMS.
 **Response (200):**
 ```json
 {
-  "message": "Código de recuperação enviado no telefone: 11999999999"
+  "message": "Código de recuperação enviado com sucesso"
 }
 ```
 

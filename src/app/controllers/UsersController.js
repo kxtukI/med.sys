@@ -182,10 +182,8 @@ class UsersController {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
 
-    await User.update(
-      { password: newPassword },
-      { where: { id: targetUserId }, individualHooks: true }
-    );
+    user.password = newPassword;
+    await user.save();
     
     recoveryCodes.delete(targetUserId);
 

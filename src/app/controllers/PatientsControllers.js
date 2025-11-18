@@ -7,10 +7,6 @@ import Patient from '../models/Patients.js';
 import User from '../models/Users.js';
 import Appointments from '../models/Appointments.js';
 import MedicalRecords from '../models/MedicalRecords.js';
-import twilio from 'twilio';
-const recoveryCodes = new Map();
-const twilioClient = twilio(process.env.TWILIO_SID, process.env.TWILIO_TOKEN);
-const twilioFrom = process.env.TWILIO_FROM;
 
 class PatientsController {
   async index(req, res) {
@@ -61,6 +57,8 @@ class PatientsController {
 
   async show(req, res) {
     const { id } = req.params;
+    const currentUser = req.currentUser;
+    
     const patient = await Patient.findByPk(id, {
       include: [
         {
@@ -73,6 +71,13 @@ class PatientsController {
     if (!patient) {
       return res.status(404).json({ error: 'Paciente não encontrado' });
     }
+
+    if (currentUser && currentUser.user_type === 'patient') {
+      if (String(patient.user_id) !== String(currentUser.id)) {
+        return res.status(403).json({ error: 'Você só pode visualizar seus próprios dados' });
+      }
+    }
+
     const maskedPatient = {
       ...patient.toJSON(),
       cpf: maskCpf(patient.cpf),
@@ -165,10 +170,24 @@ class PatientsController {
   }
 
   async update(req, res) {
-    const schema = Yup.object().shape({
+    const currentUser = req.currentUser;
+    const isPatient = currentUser && currentUser.user_type === 'patient';
+    const isAdmin = currentUser && currentUser.user_type === 'admin';
+
+    const schemaFields = {
       name: Yup.string().optional().min(3, 'Nome deve ter no mínimo 3 caracteres').matches(/^[\p{L}\p{M}\s'.-]+$/u, 'Nome deve conter apenas letras, espaços e alguns caracteres especiais'),
-      sus_number: Yup.string().optional().transform((value) => (value === '' ? null : value)).matches(/^\d+$/, 'Número do SUS deve conter apenas números').test('len', 'Número do SUS deve ter 15 dígitos', (val) => !val || val.length === 15),
-      birth_date: Yup.date().optional().max(new Date(), 'Data de nascimento não pode ser futura').transform((value, originalValue) => {
+      email: Yup.string().optional().email('Email inválido'),
+      phone: Yup.string().optional().matches(/^\d{10,11}$/, 'Telefone deve ter 10 ou 11 dígitos'),
+      password: Yup.string().optional().min(8, 'Senha deve ter no mínimo 8 caracteres').matches(/^(?=.*[A-Za-z])(?=.*\d)\S{8,}$/, 'Senha deve conter pelo menos uma letra e um número'),
+      address: Yup.string().optional(),
+      city: Yup.string().optional(),
+      state: Yup.string().optional(),
+      zip_code: Yup.string(8, 'O CEP deve ter 8 dígitos').optional().matches(/^\d+$/, 'O CEP deve conter apenas números'),
+    };
+
+    if (isAdmin) {
+      schemaFields.sus_number = Yup.string().optional().transform((value) => (value === '' ? null : value)).matches(/^\d+$/, 'Número do SUS deve conter apenas números').test('len', 'Número do SUS deve ter 15 dígitos', (val) => !val || val.length === 15);
+      schemaFields.birth_date = Yup.date().optional().max(new Date(), 'Data de nascimento não pode ser futura').transform((value, originalValue) => {
         if (!originalValue) return null;
         if (value instanceof Date && !isNaN(value)) return value;
         const parts = originalValue.split('/');
@@ -178,19 +197,20 @@ class PatientsController {
           if (!isNaN(date.getTime())) return date;
         }
         return null;
-      }),
-      email: Yup.string().optional().email('Email inválido'),
-      phone: Yup.string().optional().matches(/^\d{10,11}$/, 'Telefone deve ter 10 ou 11 dígitos'),
-      password: Yup.string().optional().min(8, 'Senha deve ter no mínimo 8 caracteres').matches(/^(?=.*[A-Za-z])(?=.*\d)\S{8,}$/, 'Senha deve conter pelo menos uma letra e um número'),
-      address: Yup.string().optional(),
-      city: Yup.string().optional(),
-      state: Yup.string().optional(),
-      zip_code: Yup.string(8, 'O CEP deve ter 8 dígitos').optional().matches(/^\d+$/, 'O CEP deve conter apenas números'),
-    });
+      });
+    }
+
+    const schema = Yup.object().shape(schemaFields);
 
     if (!(await schema.isValid(req.body))) {
       const validationErrors = await schema.validate(req.body, { abortEarly: false }).catch((err) => err.errors);
       return res.status(400).json({ error: 'Dados inválidos', details: validationErrors });
+    }
+
+    if (isPatient) {
+      delete req.body.sus_number;
+      delete req.body.birth_date;
+      delete req.body.cpf;
     }
 
     const { name, sus_number, birth_date, phone, password, email, address, city, state, zip_code } = req.body;
@@ -213,20 +233,30 @@ class PatientsController {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
 
-    await user.update({
-      name: name ?? user.name,
-      phone: phone ?? user.phone,
-      email: email ?? user.email,
-      password: password ?? user.password,
-    });
-    await patient.update({
-      sus_number: sus_number ?? patient.sus_number,
-      birth_date: formattedBirthDate ?? patient.birth_date,
-      address: address ?? patient.address,
-      city: city ?? patient.city,
-      state: state ?? patient.state,
-      zip_code: zip_code ?? patient.zip_code,
-    });
+    const userUpdates = {};
+    if (name !== undefined) userUpdates.name = name;
+    if (phone !== undefined) userUpdates.phone = phone;
+    if (email !== undefined) userUpdates.email = email;
+    if (password !== undefined) userUpdates.password = password;
+    
+    if (Object.keys(userUpdates).length > 0) {
+      await user.update(userUpdates);
+    }
+
+    const patientUpdates = {};
+    if (address !== undefined) patientUpdates.address = address;
+    if (city !== undefined) patientUpdates.city = city;
+    if (state !== undefined) patientUpdates.state = state;
+    if (zip_code !== undefined) patientUpdates.zip_code = zip_code;
+    
+    if (isAdmin) {
+      if (sus_number !== undefined) patientUpdates.sus_number = sus_number;
+      if (formattedBirthDate !== undefined) patientUpdates.birth_date = formattedBirthDate;
+    }
+    
+    if (Object.keys(patientUpdates).length > 0) {
+      await patient.update(patientUpdates);
+    }
 
     const data = await Patient.findByPk(id, {
       include: [
@@ -259,6 +289,7 @@ class PatientsController {
 
   async getMedicalHistory(req, res) {
     const { id } = req.params;
+    const currentUser = req.currentUser;
 
     if (!id || isNaN(id)) {
       return res.status(400).json({ error: 'ID do paciente inválido' });
@@ -299,6 +330,12 @@ class PatientsController {
 
     if (!patient) {
       return res.status(404).json({ error: 'Paciente não encontrado' });
+    }
+
+    if (currentUser && currentUser.user_type === 'patient') {
+      if (String(patient.user_id) !== String(currentUser.id)) {
+        return res.status(403).json({ error: 'Você só pode visualizar seu próprio histórico médico' });
+      }
     }
 
     const formattedPatient = {

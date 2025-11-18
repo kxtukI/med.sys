@@ -1,6 +1,7 @@
 import { Op } from 'sequelize';
 import * as Yup from 'yup';
 import { injectUserResourceId } from '../utils/authUtils.js';
+import { isWithinWorkingHours } from '../utils/dateUtils.js';
 import Appointment from '../models/Appointments.js';
 import Patient from '../models/Patients.js';
 import Professional from '../models/Professionals.js';
@@ -126,6 +127,14 @@ class AppointmentsController {
     const healthUnit = await HealthUnit.findByPk(health_unit_id);
     if (!healthUnit) {
       return res.status(400).json({ error: 'Unidade de saúde não encontrada' });
+    }
+
+    const workingHoursValidation = isWithinWorkingHours(healthUnit.working_hours, appointmentDate);
+    if (!workingHoursValidation.isValid) {
+      return res.status(400).json({ 
+        error: 'Horário fora do funcionamento', 
+        details: workingHoursValidation.message || 'O agendamento deve ser feito dentro do horário de funcionamento da unidade'
+      });
     }
 
     const professionalHealthUnit = await Professional.findByPk(professional_id, {
@@ -264,6 +273,21 @@ class AppointmentsController {
 
     if (appointment.status === 'completed' || appointment.status === 'canceled') {
       return res.status(403).json({ error: 'Ação não permitida', details: `Não é possível alterar um agendamento com status '${appointment.status}'.` });
+    }
+
+    if (req.body.date_time) {
+      const newAppointmentDate = new Date(req.body.date_time);
+      const healthUnit = await HealthUnit.findByPk(appointment.health_unit_id);
+      
+      if (healthUnit) {
+        const workingHoursValidation = isWithinWorkingHours(healthUnit.working_hours, newAppointmentDate);
+        if (!workingHoursValidation.isValid) {
+          return res.status(400).json({ 
+            error: 'Horário fora do funcionamento', 
+            details: workingHoursValidation.message || 'O agendamento deve ser feito dentro do horário de funcionamento da unidade'
+          });
+        }
+      }
     }
 
     await appointment.update(req.body);
