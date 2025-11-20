@@ -1,7 +1,8 @@
 import { Op } from 'sequelize';
 import * as Yup from 'yup';
 import { injectUserResourceId } from '../utils/authUtils.js';
-import { isWithinWorkingHours } from '../utils/dateUtils.js';
+import { isWithinWorkingHours, isWithinProfessionalSchedule } from '../utils/dateUtils.js';
+import AppointmentSlotService from '../services/AppointmentSlotService.js';
 import Appointment from '../models/Appointments.js';
 import Patient from '../models/Patients.js';
 import Professional from '../models/Professionals.js';
@@ -134,6 +135,31 @@ class AppointmentsController {
       return res.status(400).json({ 
         error: 'Horário fora do funcionamento', 
         details: workingHoursValidation.message || 'O agendamento deve ser feito dentro do horário de funcionamento da unidade'
+      });
+    }
+
+    const scheduleValidation = await isWithinProfessionalSchedule(
+      professional_id,
+      health_unit_id,
+      appointmentDate
+    );
+    if (!scheduleValidation.isValid) {
+      return res.status(400).json({
+        error: 'Horário fora do atendimento',
+        details: scheduleValidation.message || 'O agendamento deve ser feito dentro do horário de atendimento do profissional',
+      });
+    }
+
+    const slotValidation = await AppointmentSlotService.validateSlot(
+      professional_id,
+      health_unit_id,
+      appointmentDate,
+      appointmentDate.toTimeString().substring(0, 5)
+    );
+    if (!slotValidation.valid) {
+      return res.status(409).json({
+        error: 'Horário indisponível',
+        details: slotValidation.message || 'O horário selecionado não é uma vaga válida ou já está ocupado',
       });
     }
 
@@ -415,7 +441,7 @@ class AppointmentsController {
 
       calendar[dateKey].appointments.push({
         id: appointment.id,
-        time: date.toTimeString().split(' ')[0].substring(0, 5), // HH:mm
+        time: date.toTimeString().split(' ')[0].substring(0, 5),
         date_time: appointment.date_time,
         specialty: appointment.specialty,
         status: appointment.status,

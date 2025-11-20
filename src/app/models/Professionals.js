@@ -70,6 +70,10 @@ class Professionals extends Model {
       foreignKey: 'professional_id',
       as: 'appointments',
     });
+    this.hasMany(models.ProfessionalSchedules, {
+      foreignKey: 'professional_id',
+      as: 'schedules',
+    });
   }
 }
 

@@ -12,10 +12,13 @@ import MedicationReservationsController from './app/controllers/MedicationReserv
 import MedicalRecordsController from './app/controllers/MedicalRecordsController.js';
 import AppointmentsController from './app/controllers/AppointmentsController.js';
 import ReferralsController from './app/controllers/ReferralsController.js';
+import ProfessionalSchedulesController from './app/controllers/ProfessionalSchedulesController.js';
+import AppointmentSlotsController from './app/controllers/AppointmentSlotsController.js';
 import authMiddleware from './app/middlewares/authMiddleware.js';
 import authorizationMiddleware, { checkOwnershipOrAdmin } from './app/middlewares/authorizationMiddleware.js';
 import { checkMedicalRecordOwnership, checkAppointmentOwnership, checkPatientOwnership } from './app/middlewares/ownershipMiddleware.js';
 import checkHealthUnitAccess from './app/middlewares/adminHealthUnitMiddleware.js';
+import checkProfessionalScheduleAccess from './app/middlewares/professionalScheduleMiddleware.js';
 import SessionsController from './app/controllers/SessionsController.js';
 import NotificationsController from './app/controllers/NotificationsController.js';
 
@@ -95,6 +98,19 @@ routes.get('/referrals', authorizationMiddleware(['professional', 'admin']), Ref
 routes.get('/referrals/:id', authorizationMiddleware(['professional', 'admin']), ReferralsController.show);
 routes.post('/referrals', authorizationMiddleware(['professional', 'admin']), ReferralsController.create);
 routes.put('/referrals/:id', authorizationMiddleware(['professional', 'admin']), ReferralsController.update);
+
+routes.get('/professional_schedules', paginationMiddleware, ProfessionalSchedulesController.index);
+routes.get('/professional_schedules/:id', ProfessionalSchedulesController.show);
+routes.get('/professional_schedules/professional/:professional_id/health-unit/:health_unit_id', ProfessionalSchedulesController.getByProfessionalAndHealthUnit);
+routes.get('/professional_schedules/health-unit/:health_unit_id', paginationMiddleware, ProfessionalSchedulesController.getByHealthUnit);
+routes.post('/professional_schedules', authorizationMiddleware(['admin']), checkProfessionalScheduleAccess, ProfessionalSchedulesController.create);
+routes.post('/professional_schedules/bulk', authorizationMiddleware(['admin']), checkProfessionalScheduleAccess, ProfessionalSchedulesController.createBulk);
+routes.put('/professional_schedules/:id', authorizationMiddleware(['admin']), ProfessionalSchedulesController.update);
+routes.delete('/professional_schedules/:id', authorizationMiddleware(['admin']), ProfessionalSchedulesController.delete);
+
+routes.get('/appointment_slots/:professional_id/:health_unit_id/:date', AppointmentSlotsController.getSlotsByDate);
+routes.get('/appointment_slots/:professional_id/:health_unit_id/next-available/days', AppointmentSlotsController.getNextAvailableDays);
+routes.get('/appointment_slots/:professional_id/:health_unit_id/:date/:time/validate', AppointmentSlotsController.validateSlot);
 
 routes.get('/notifications', NotificationsController.index);
 routes.post('/notifications/:id/resend', NotificationsController.resend);

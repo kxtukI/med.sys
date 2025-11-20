@@ -13,6 +13,7 @@ import HealthUnits from '../app/models/HealthUnits.js';
 import MedicalRecords from '../app/models/MedicalRecords.js';
 import Referrals from '../app/models/Referrals.js';
 import ProfessionalHealthUnits from '../app/models/ProfessionalHealthUnits.js';
+import ProfessionalSchedules from '../app/models/ProfessionalSchedules.js';
 import Notifications from '../app/models/Notifications.js';
 
 const models = [
@@ -27,6 +28,7 @@ const models = [
   HealthUnits,
   Referrals,
   ProfessionalHealthUnits,
+  ProfessionalSchedules,
   Notifications,
 ];
 

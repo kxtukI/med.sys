@@ -77,6 +77,10 @@ class HealthUnits extends Model {
       foreignKey: 'health_unit_id',
       as: 'admins',
     });
+    this.hasMany(models.ProfessionalSchedules, {
+      foreignKey: 'health_unit_id',
+      as: 'professional_schedules',
+    });
   }
 }
 

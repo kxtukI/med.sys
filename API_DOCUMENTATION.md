@@ -1,5 +1,5 @@
 # Documentação da Med.Sys
-**Última atualização:** 06 de novembro de 2025
+**Última atualização:** 20 de novembro de 2025 
 
 ## 📋 Índice
 1. [Introdução](#introdução)
@@ -8,12 +8,14 @@
 4. [Pacientes](#pacientes)
 5. [Profissionais](#profissionais)
 6. [Unidades de Saúde](#unidades-de-saúde)
-7. [Medicamentos](#medicamentos)
-8. [Inventário de Medicamentos](#inventário-de-medicamentos)
-9. [Reservas de Medicamentos](#reservas-de-medicamentos)
-10. [Agendamentos](#agendamentos)
-11. [Registros Médicos](#registros-médicos)
-12. [Encaminhamentos](#encaminhamentos)
+7. [Horários dos Profissionais](#horários-dos-profissionais)
+8. [Vagas de Agendamento](#vagas-de-agendamento)
+9. [Medicamentos](#medicamentos)
+10. [Inventário de Medicamentos](#inventário-de-medicamentos)
+11. [Reservas de Medicamentos](#reservas-de-medicamentos)
+12. [Agendamentos](#agendamentos)
+13. [Registros Médicos](#registros-médicos)
+14. [Encaminhamentos](#encaminhamentos)
 
 
 ## 📝 Notas Importantes
@@ -879,6 +881,524 @@ Authorization: Bearer {token}
 
 ---
 
+## 🕐 Horários dos Profissionais
+
+Os horários dos profissionais definem quando eles trabalham em cada unidade de saúde. O sistema suporta:
+- **Horário de início e fim**: Período de atendimento
+- **Pausas**: Configurar pausas (almoço, descanso) durante o expediente
+- **Duração de slots**: Duração padronizada de cada consulta (padrão: 20 minutos)
+- **Buffer**: Intervalo entre consultas (padrão: 10 minutos) para preparação ou deslocamento
+
+### Listar Horários dos Profissionais
+**GET** `/professional_schedules?page=1&limit=10&professional_id=1&health_unit_id=1&day_of_week=1`
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Query Parameters:**
+- `professional_id` (opcional): Filtrar por profissional
+- `health_unit_id` (opcional): Filtrar por unidade de saúde
+- `day_of_week` (opcional): Filtrar por dia da semana (0=domingo, 6=sábado)
+
+**Response (200):**
+```json
+{
+  "total": 2,
+  "limit": 10,
+  "offset": 0,
+  "data": [
+    {
+      "id": 1,
+      "professional_id": 8,
+      "health_unit_id": 1,
+      "day_of_week": 1,
+      "startTime": "08:00",
+      "endTime": "12:00",
+      "slotDurationMinutes": 20,
+      "breakStartTime": null,
+      "breakEndTime": null,
+      "bufferMinutes": 10,
+      "createdAt": "2025-11-20T20:37:00.689Z",
+      "updatedAt": "2025-11-20T20:37:00.689Z",
+      "professional": {
+        "id": 8,
+        "professional_register": "CRM123456",
+        "specialty": "Cardiologia",
+        "user": {
+          "id": 24,
+          "name": "Dr. João",
+          "email": "joao@example.com"
+        }
+      },
+      "health_unit": {
+        "id": 1,
+        "name": "Clínica Saúde Plena",
+        "city": "Campinas",
+        "state": "SP"
+      }
+    }
+  ]
+}
+```
+
+---
+
+### Obter Horário Específico
+**GET** `/professional_schedules/:id`
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+  "id": 1,
+  "professional_id": 8,
+  "health_unit_id": 1,
+  "day_of_week": 1,
+  "startTime": "08:00",
+  "endTime": "12:00",
+  "slotDurationMinutes": 20,
+  "breakStartTime": "10:00",
+  "breakEndTime": "10:30",
+  "bufferMinutes": 10,
+  "professional": {
+    "id": 8,
+    "professional_register": "CRM123456",
+    "specialty": "Cardiologia",
+    "user": {
+      "id": 24,
+      "name": "Dr. João",
+      "email": "joao@example.com"
+    }
+  },
+  "health_unit": {
+    "id": 1,
+    "name": "Clínica Saúde Plena",
+    "address": "Rua das Rosas, 500",
+    "city": "Campinas",
+    "state": "SP"
+  }
+}
+```
+
+---
+
+### Obter Horários por Profissional e Unidade
+**GET** `/professional_schedules/professional/:professional_id/health-unit/:health_unit_id`
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+  "id": 1,
+  "professional_id": 8,
+  "health_unit_id": 1,
+  "day_of_week": 1,
+  "startTime": "08:00",
+  "endTime": "12:00",
+  "slotDurationMinutes": 20,
+  "bufferMinutes": 10,
+  "professional": {
+    "id": 8,
+    "professional_register": "CRM123456",
+    "specialty": "Cardiologia",
+    "user": {
+      "id": 24,
+      "name": "Dr. João",
+      "email": "joao@example.com"
+    }
+  },
+  "health_unit": {
+    "id": 1,
+    "name": "Clínica Saúde Plena",
+    "city": "Campinas",
+    "state": "SP"
+  }
+}
+```
+
+---
+
+### Criar Horário do Profissional (Admin)
+**POST** `/professional_schedules`
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Body:**
+```json
+{
+  "professional_id": 8,
+  "health_unit_id": 1,
+  "day_of_week": 1,
+  "start_time": "08:00",
+  "end_time": "12:00",
+  "slot_duration_minutes": 20,
+  "break_start_time": "10:00",
+  "break_end_time": "10:30",
+  "buffer_minutes": 10
+}
+```
+
+**Campos obrigatórios:**
+- `professional_id`: ID do profissional
+- `health_unit_id`: ID da unidade de saúde
+- `day_of_week`: Dia da semana (0=domingo, 1=segunda, ..., 6=sábado)
+- `start_time`: Horário de início (formato HH:MM)
+- `end_time`: Horário de fim (formato HH:MM)
+
+**Campos opcionais:**
+- `slot_duration_minutes`: Duração de cada slot (padrão: 20)
+- `break_start_time`: Início da pausa (formato HH:MM)
+- `break_end_time`: Fim da pausa (formato HH:MM)
+- `buffer_minutes`: Intervalo entre consultas (padrão: 10)
+
+**Response (201):**
+```json
+{
+  "id": 1,
+  "professional_id": 8,
+  "health_unit_id": 1,
+  "day_of_week": 1,
+  "startTime": "08:00",
+  "endTime": "12:00",
+  "slotDurationMinutes": 20,
+  "breakStartTime": "10:00",
+  "breakEndTime": "10:30",
+  "bufferMinutes": 10,
+  "createdAt": "2025-11-20T20:37:00.689Z",
+  "updatedAt": "2025-11-20T20:37:00.689Z",
+  "professional": {
+    "id": 8,
+    "professional_register": "CRM123456",
+    "specialty": "Cardiologia",
+    "user": {
+      "id": 24,
+      "name": "Dr. João",
+      "email": "joao@example.com"
+    }
+  },
+  "health_unit": {
+    "id": 1,
+    "name": "Clínica Saúde Plena",
+    "address": "Rua das Rosas, 500",
+    "city": "Campinas",
+    "state": "SP"
+  }
+}
+```
+
+---
+
+### Criar Múltiplos Horários em Bulk (Admin)
+**POST** `/professional_schedules/bulk`
+
+Permite criar vários horários para um profissional de uma vez, útil para configurar toda a semana.
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Body:**
+```json
+{
+  "professional_id": 8,
+  "health_unit_id": 1,
+  "schedules": [
+    {
+      "day_of_week": 1,
+      "start_time": "08:00",
+      "end_time": "12:00",
+      "slot_duration_minutes": 20,
+      "break_start_time": "10:00",
+      "break_end_time": "10:30",
+      "buffer_minutes": 10
+    },
+    {
+      "day_of_week": 2,
+      "start_time": "08:00",
+      "end_time": "12:00",
+      "slot_duration_minutes": 20,
+      "buffer_minutes": 10
+    },
+    {
+      "day_of_week": 3,
+      "start_time": "14:00",
+      "end_time": "18:00",
+      "slot_duration_minutes": 20,
+      "buffer_minutes": 10
+    }
+  ]
+}
+```
+
+**Response (201):**
+```json
+[
+  {
+    "id": 1,
+    "professional_id": 8,
+    "health_unit_id": 1,
+    "day_of_week": 1,
+    "startTime": "08:00",
+    "endTime": "12:00",
+    "slotDurationMinutes": 20,
+    "breakStartTime": "10:00",
+    "breakEndTime": "10:30",
+    "bufferMinutes": 10
+  },
+  {
+    "id": 2,
+    "professional_id": 8,
+    "health_unit_id": 1,
+    "day_of_week": 2,
+    "startTime": "08:00",
+    "endTime": "12:00",
+    "slotDurationMinutes": 20,
+    "bufferMinutes": 10
+  },
+  {
+    "id": 3,
+    "professional_id": 8,
+    "health_unit_id": 1,
+    "day_of_week": 3,
+    "startTime": "14:00",
+    "endTime": "18:00",
+    "slotDurationMinutes": 20,
+    "bufferMinutes": 10
+  }
+]
+```
+
+---
+
+### Atualizar Horário do Profissional (Admin)
+**PUT** `/professional_schedules/:id`
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Body:**
+```json
+{
+  "start_time": "09:00",
+  "end_time": "13:00",
+  "slot_duration_minutes": 25,
+  "buffer_minutes": 15
+}
+```
+
+**Response (200):**
+```json
+{
+  "id": 1,
+  "professional_id": 8,
+  "health_unit_id": 1,
+  "day_of_week": 1,
+  "startTime": "09:00",
+  "endTime": "13:00",
+  "slotDurationMinutes": 25,
+  "bufferMinutes": 15,
+  "professional": {
+    "id": 8,
+    "professional_register": "CRM123456",
+    "specialty": "Cardiologia",
+    "user": {
+      "id": 24,
+      "name": "Dr. João",
+      "email": "joao@example.com"
+    }
+  }
+}
+```
+
+---
+
+### Deletar Horário do Profissional (Admin)
+**DELETE** `/professional_schedules/:id`
+
+**Headers:**
+```
+Authorization: Bearer {token}
+```
+
+**Response (200):**
+```json
+{
+  "message": "Horário deletado com sucesso"
+}
+```
+
+---
+
+## 📅 Vagas de Agendamento
+
+O sistema gera automaticamente as vagas (slots) de agendamento baseado nos horários do profissional, considerando:
+- Duração de cada consulta (slot)
+- Buffer entre consultas
+- Pausas durante o expediente
+- Agendamentos já realizados (vagas ocupadas)
+
+As vagas disponíveis aparecem em verde, as ocupadas em cinza na interface.
+
+### Obter Vagas por Data
+**GET** `/appointment_slots/:professional_id/:health_unit_id/:date`
+
+Retorna todas as vagas disponíveis e ocupadas para um profissional em uma data específica.
+
+**Parameters:**
+- `professional_id`: ID do profissional
+- `health_unit_id`: ID da unidade de saúde
+- `date`: Data no formato `YYYY-MM-DD`
+
+**Response (200):**
+```json
+{
+  "date": "2025-11-24",
+  "professional_id": 8,
+  "health_unit_id": 1,
+  "day_of_week": 1,
+  "slots": [
+    {
+      "start_time": "08:00",
+      "end_time": "08:20",
+      "start_minutes": 480,
+      "end_minutes": 500,
+      "available": true,
+      "booked_appointment_id": null
+    },
+    {
+      "start_time": "08:30",
+      "end_time": "08:50",
+      "start_minutes": 510,
+      "end_minutes": 530,
+      "available": false,
+      "booked_appointment_id": 5
+    },
+    {
+      "start_time": "09:00",
+      "end_time": "09:20",
+      "start_minutes": 540,
+      "end_minutes": 560,
+      "available": true,
+      "booked_appointment_id": null
+    }
+  ],
+  "summary": {
+    "total": 12,
+    "available": 11,
+    "booked": 1
+  }
+}
+```
+
+**Campos na resposta:**
+- `start_time`: Hora de início da vaga (HH:MM)
+- `end_time`: Hora de término da vaga (HH:MM)
+- `available`: Se a vaga está disponível (true) ou ocupada (false)
+- `booked_appointment_id`: ID do agendamento se ocupada
+
+---
+
+### Obter Próximos Dias com Disponibilidade
+**GET** `/appointment_slots/:professional_id/:health_unit_id/next-available/days?days=30`
+
+Retorna os próximos dias que possuem vagas disponíveis.
+
+**Parameters:**
+- `professional_id`: ID do profissional
+- `health_unit_id`: ID da unidade de saúde
+- `days` (query, opcional): Número de dias a verificar (padrão: 30, máximo: 90)
+
+**Response (200):**
+```json
+{
+  "professional_id": 8,
+  "health_unit_id": 1,
+  "available_days": [
+    {
+      "date": "2025-11-24",
+      "day_of_week": 1,
+      "available_slots": 11,
+      "total_slots": 12
+    },
+    {
+      "date": "2025-11-25",
+      "day_of_week": 2,
+      "available_slots": 10,
+      "total_slots": 12
+    },
+    {
+      "date": "2025-11-26",
+      "day_of_week": 3,
+      "available_slots": 8,
+      "total_slots": 10
+    }
+  ],
+  "total_days_with_availability": 3
+}
+```
+
+---
+
+### Validar Vaga Específica
+**GET** `/appointment_slots/:professional_id/:health_unit_id/:date/:time/validate`
+
+Valida se um horário específico é uma vaga válida e disponível para agendamento.
+
+**Parameters:**
+- `professional_id`: ID do profissional
+- `health_unit_id`: ID da unidade de saúde
+- `date`: Data no formato `YYYY-MM-DD`
+- `time`: Horário no formato `HH:MM`
+
+**Response (200) - Vaga disponível:**
+```json
+{
+  "valid": true,
+  "message": "Horário disponível",
+  "slot": {
+    "start_time": "08:00",
+    "end_time": "08:20",
+    "start_minutes": 480,
+    "end_minutes": 500,
+    "available": true,
+    "booked_appointment_id": null
+  }
+}
+```
+
+**Response (409) - Vaga indisponível:**
+```json
+{
+  "error": "Horário indisponível",
+  "details": "Vaga já foi ocupada"
+}
+```
+
+**Response (404) - Profissional sem horário neste dia:**
+```json
+{
+  "error": "Profissional não tem horário disponível neste dia"
+}
+```
+
+---
+
 ## 💊 Medicamentos
 
 ### Listar Medicamentos
@@ -1657,6 +2177,22 @@ Authorization: Bearer {token}
   "status": "scheduled"
 }
 ```
+
+**Nota Importante:** O horário (`date_time`) deve ser uma vaga válida gerada pelo sistema. Utilize os endpoints de vagas de agendamento para:
+1. Listar vagas disponíveis: `GET /appointment_slots/{professional_id}/{health_unit_id}/{date}`
+2. Validar horário escolhido: `GET /appointment_slots/{professional_id}/{health_unit_id}/{date}/{time}/validate`
+
+O sistema valida automaticamente:
+- ✓ Se o horário é uma vaga válida
+- ✓ Se a vaga não está ocupada
+- ✓ Se está dentro do horário do profissional
+- ✓ Se respeita o buffer entre consultas
+- ✓ Se não está em pausa
+
+**Validações:**
+- Se tentar agendar fora de uma vaga válida: erro 409
+- Se o horário está ocupado: erro 409
+- Se profissional não tem horário cadastrado neste dia: erro 400
 
 **Response (201):**
 ```json
