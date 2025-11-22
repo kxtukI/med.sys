@@ -1,12 +1,9 @@
-<!-- Agendamentos -->
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agendamentos - Med Dashboard</title>
-    
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="dashboard-page">
@@ -18,14 +15,17 @@
                 <h2>Med.Sys</h2>
             </div>
             <nav class="sidebar-nav" aria-label="Menu Principal">
-                <ul>
-                    <li><a href="dashboard.html">Dashboard</a></li>
-                    <li><a href="users.html">Usuários</a></li>
-                    <li><a href="patients.html">Pacientes</a></li>
-                    <li><a href="medications.html">Medicamentos</a></li>
-                    <li><a href="inventory.html">Inventário</a></li>
-                    <li><a href="reservations.html">Reservas</a></li>
-                    <li><a href="appointments.html" class="active">Agendamentos</a></li>
+                <ul class="nav-links">
+                    <li><a href="dashboard.html"><span class="icon">Dashboard</span></a></li>
+                    <li id="menu-users" style="display: none;">
+                        <a href="users.html"><span class="icon">Usuários</span></a>
+                    </li>
+                    <li><a href="patients.html"><span class="icon">Pacientes</span></a></li>
+                    <li><a href="medications.html"><span class="icon">Medicamentos</span></a></li>
+                    <li><a href="inventory.html"><span class="icon">Inventário</span></a></li>
+                    <li><a href="reservations.html"><span class="icon">Reservas</span></a></li>
+                    <li><a href="appointments.html" class="active"><span class="icon">Agendamentos</span></a></li>
+                    <li><a href="schedule.html"><span class="icon">Horários</span></a></li>
                 </ul>
             </nav>
         </aside>
@@ -37,17 +37,17 @@
             <header class="navbar">
                 <div class="navbar-left">
                     <button id="menu-toggle" class="btn-icon" aria-label="Abrir menu">
-                        <span class="hamburger-icon"></span>
+                        <span class="hamburger-icon">Menu</span>
                     </button>
                     <h1>Agendamentos</h1>
                 </div>
                 <div class="navbar-right">
-                    <button id="logout-button" class="btn btn-secondary">Logout</button>
+                    <button id="logout-button" class="btn btn-secondary">Sair</button>
                 </div>
             </header>
 
             <main class="page-main-content">
-                
+
                 <div class="page-header">
                     <h2>Lista de Agendamentos</h2>
                     <button id="add-appointment-btn" class="btn btn-primary">
@@ -59,7 +59,7 @@
                     <div class="form-group">
                         <label for="filter-status">Filtrar por Status</label>
                         <select id="filter-status">
-                            <option value="">Todos os Status</option>
+                            <option value="">Todos</option>
                             <option value="scheduled">Agendado</option>
                             <option value="completed">Concluído</option>
                             <option value="canceled">Cancelado</option>
@@ -71,6 +71,7 @@
                     </div>
                     <button id="filter-btn" class="btn btn-secondary">Filtrar</button>
                 </section>
+
                 <div class="table-container">
                     <table class="data-table">
                         <thead>
@@ -86,7 +87,7 @@
                             </tbody>
                     </table>
                 </div>
-                
+
                 <nav class="pagination" id="pagination-controls" aria-label="Paginação">
                     <button class="btn btn-secondary" id="prev-page" disabled>Anterior</button>
                     <span id="page-info">Página 1 de 1</span>
@@ -96,35 +97,35 @@
             </main>
         </div>
     </div>
-    
+
     <div class="modal" id="appointment-modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="modal-title">Novo Agendamento</h3>
                 <button id="close-modal-btn" class="btn-icon" data-modal-close>&times;</button>
             </div>
-            
+
             <form id="appointment-form" class="modal-form-grid">
                 <input type="hidden" id="appointment-id" name="id">
 
                 <div class="form-group">
                     <label for="appointment-patient">Paciente</label>
                     <select id="appointment-patient" name="patient_id" required>
-                        <option value="">Carregando pacientes...</option>
+                        <option value="">Carregando...</option>
                     </select>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="appointment-professional">Profissional</label>
                      <select id="appointment-professional" name="professional_id" required>
-                        <option value="">Carregando profissionais...</option>
+                        <option value="">Carregando...</option>
                     </select>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="appointment-unit">Unidade de Saúde</label>
                      <select id="appointment-unit" name="health_unit_id" required>
-                        <option value="">Carregando unidades...</option>
+                        <option value="">Carregando...</option>
                     </select>
                 </div>
 
@@ -137,7 +138,7 @@
                     <label for="appointment-datetime">Data e Hora</label>
                     <input type="datetime-local" id="appointment-datetime" name="date_time" required>
                 </div>
-                
+
                  <div class="form-group">
                     <label for="appointment-status">Status</label>
                      <select id="appointment-status" name="status" required>
@@ -146,7 +147,7 @@
                         <option value="canceled">Cancelado</option>
                     </select>
                 </div>
-                
+
                 <div class="form-group-full-width">
                      <p id="appointment-form-error" class="error-message"></p>
                 </div>
@@ -158,8 +159,38 @@
             </form>
         </div>
     </div>
-    <div class="modal-overlay" id="modal-overlay"></div>
 
+    <div id="medical-record-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Prontuário Médico</h3>
+                <button id="close-record-btn" class="close-modal-btn">&times;</button>
+            </div>
+            <form id="medical-record-form">
+                <input type="hidden" id="record-appointment-id" name="appointment_id">
+
+                <div class="form-group full-width" style="width: 100%; margin-bottom: 15px;">
+                    <label>Observações *</label>
+                    <textarea name="observations" required rows="3" style="width: 100%;"></textarea>
+                </div>
+                <div class="form-group full-width" style="width: 100%; margin-bottom: 15px;">
+                    <label>Medicação Prescrita</label>
+                    <textarea name="prescribed_medications" rows="2" style="width: 100%;"></textarea>
+                </div>
+                <div class="form-group full-width" style="width: 100%; margin-bottom: 15px;">
+                    <label>Exames Solicitados</label>
+                    <textarea name="requested_exams" rows="2" style="width: 100%;"></textarea>
+                </div>
+
+                <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" class="btn btn-secondary" id="cancel-record-btn">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Prontuário</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-overlay"></div>
 
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>

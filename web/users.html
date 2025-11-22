@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Usuários - Med Dashboard</title>
-    
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="dashboard-page">
@@ -16,14 +15,15 @@
                 <h2>Med.Sys</h2>
             </div>
             <nav class="sidebar-nav" aria-label="Menu Principal">
-                <ul>
-                    <li><a href="dashboard.html">Dashboard</a></li>
-                    <li><a href="users.html" class="active">Usuários</a></li>
-                    <li><a href="patients.html">Pacientes</a></li>
-                    <li><a href="medications.html">Medicamentos</a></li>
-                    <li><a href="inventory.html">Inventário</a></li>
-                    <li><a href="reservations.html">Reservas</a></li>
-                    <li><a href="appointments.html">Agendamentos</a></li>
+                <ul class="nav-links">
+                    <li><a href="dashboard.html"><span class="icon">Dashboard</span></a></li>
+                    <li id="menu-users"><a href="users.html" class="active"><span class="icon">Usuários</span></a></li>
+                    <li><a href="patients.html"><span class="icon">Pacientes</span></a></li>
+                    <li><a href="medications.html"><span class="icon">Medicamentos</span></a></li>
+                    <li><a href="inventory.html"><span class="icon">Inventário</span></a></li>
+                    <li><a href="reservations.html"><span class="icon">Reservas</span></a></li>
+                    <li><a href="appointments.html"><span class="icon">Agendamentos</span></a></li>
+                    <li><a href="schedule.html"><span class="icon">Horários</span></a></li>
                 </ul>
             </nav>
         </aside>
@@ -35,23 +35,23 @@
             <header class="navbar">
                 <div class="navbar-left">
                     <button id="menu-toggle" class="btn-icon" aria-label="Abrir menu">
-                        <span class="hamburger-icon"></span>
+                        <span class="hamburger-icon">Menu</span>
                     </button>
                     <h1>Gestão de Usuários</h1>
                 </div>
                 <div class="navbar-right">
-                    <button id="logout-button" class="btn btn-secondary">Logout</button>
+                    <button id="logout-button" class="btn btn-secondary">Sair</button>
                 </div>
             </header>
 
             <main class="page-main-content">
-                
+
                 <div class="page-header">
                     <h2>Lista de Usuários</h2>
                     <button id="add-professional-btn" class="btn btn-primary">
                         Novo Profissional
                     </button>
-                </div>
+                    </div>
 
                 <div class="table-container">
                     <table class="data-table">
@@ -81,10 +81,10 @@
     <div class="modal" id="user-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="modal-title">Editar Usuário</h3> 
+                <h3 id="modal-title">Editar Usuário</h3>
                 <button id="close-modal-btn" class="btn-icon" data-modal-close>&times;</button>
             </div>
-            
+
             <form id="user-form" class="modal-form-grid">
                 <input type="hidden" id="user-id" name="id">
 
@@ -92,12 +92,12 @@
                     <label for="user-name">Nome Completo</label>
                     <input type="text" id="user-name" name="name" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="user-email">Email</label>
                     <input type="email" id="user-email" name="email" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="user-phone">Telefone</label>
                     <input type="tel" id="user-phone" name="phone">
@@ -124,32 +124,32 @@
                 <h3 id="prof-modal-title">Novo Profissional</h3>
                 <button id="prof-close-modal-btn" class="btn-icon" data-modal-close>&times;</button>
             </div>
-            
+
             <form id="professional-form" class="modal-form-grid" enctype="multipart/form-data">
-                
+
                 <div class="form-group">
                     <label for="prof-name">Nome Completo</label>
                     <input type="text" id="prof-name" name="name" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="prof-email">Email</label>
                     <input type="email" id="prof-email" name="email" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="prof-phone">Telefone</label>
-                    <input type="tel" id="prof-phone" name="phone" placeholder="Apenas números (10 ou 11 dígitos)" required>
+                    <input type="tel" id="prof-phone" name="phone" placeholder="Apenas números" required>
                 </div>
 
                 <div class="form-group">
                     <label for="prof-password">Senha</label>
-                    <input type="password" id="prof-password" name="password" placeholder="Mín. 8 caracteres (letras e números)" required>
+                    <input type="password" id="prof-password" name="password" placeholder="Mín. 8 caracteres" required>
                 </div>
 
                 <div class="form-group">
                     <label for="prof-specialty">Especialidade</label>
-                    <input type="text" id="prof-specialty" name="specialty" placeholder="Ex: Ginecologista" required>
+                    <input type="text" id="prof-specialty" name="specialty" placeholder="Ex: Cardiologista" required>
                 </div>
 
                 <div class="form-group">
@@ -161,11 +161,11 @@
                     <label for="prof-type">Tipo</label>
                     <select id="prof-type" name="professional_type" required>
                         <option value="">Selecione o tipo</option>
-                        <option value="doctor">Doutor(a)</option>
+                        <option value="doctor">Médico(a)</option>
                         <option value="administrative">Administrativo</option>
-                    </select>
+                        </select>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="prof-photo">Foto</label>
                     <input type="file" id="prof-photo" name="photo" accept="image/*">
@@ -181,7 +181,6 @@
         </div>
     </div>
     <div class="modal-overlay" id="modal-overlay"></div>
-
 
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
