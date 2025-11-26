@@ -5,6 +5,7 @@
   "repository": "https://github.com/kxtukI/med.sys",
   "license": "MIT",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^3.0.2",
     "body-parser": "^2.2.0",
     "cloudinary": "^2.8.0",

@@ -21,6 +21,7 @@ import checkHealthUnitAccess from './app/middlewares/adminHealthUnitMiddleware.j
 import checkProfessionalScheduleAccess from './app/middlewares/professionalScheduleMiddleware.js';
 import SessionsController from './app/controllers/SessionsController.js';
 import NotificationsController from './app/controllers/NotificationsController.js';
+import ChatController from './app/controllers/ChatController.js';
 
 import { processPendingNotifications } from './app/services/NotificationJobService.js';
 import { processLateAppointments } from './app/services/LateAppointmentJobService.js';
@@ -115,6 +116,13 @@ routes.get('/appointment_slots/:professional_id/:health_unit_id/:date/:time/vali
 routes.get('/notifications', NotificationsController.index);
 routes.post('/notifications/:id/resend', NotificationsController.resend);
 //routes.post('/appointments/:id/cancel-by-token', NotificationsController.cancelByToken);
+
+routes.post('/chat/send', authMiddleware, ChatController.send);
+routes.get('/chat/history', authMiddleware, ChatController.getHistory);
+routes.get('/chat/info', authMiddleware, ChatController.getInfo);
+routes.post('/chat/start', authMiddleware, ChatController.start);
+routes.post('/chat/clear', authMiddleware, ChatController.clear);
+routes.post('/chat/logout', authMiddleware, ChatController.logout);
 
 routes.post('/jobs/run-pending-notifications', async (req, res) => {
     try {
