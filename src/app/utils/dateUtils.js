@@ -139,6 +139,7 @@ export const isWithinProfessionalSchedule = async (professionalId, healthUnitId,
       health_unit_id: healthUnitId,
       day_of_week: dayOfWeek,
     },
+    attributes: { include: ['start_time', 'end_time'] }
   });
 
   if (!schedule) {
@@ -148,15 +149,20 @@ export const isWithinProfessionalSchedule = async (professionalId, healthUnitId,
     };
   }
 
-  if (!schedule.start_time || !schedule.end_time) {
+  const scheduleData = schedule.toJSON ? schedule.toJSON() : schedule;
+  // LOG TEMPORÁRIO PARA DEBUG
+  // eslint-disable-next-line no-console
+  console.log('DEBUG scheduleData:', JSON.stringify(scheduleData));
+
+  if (!scheduleData.startTime || !scheduleData.endTime) {
     return {
       isValid: false,
       message: 'Horário de atendimento não configurado corretamente',
     };
   }
   
-  const startTimeValue = schedule.start_time;
-  const endTimeValue = schedule.end_time;
+  const startTimeValue = scheduleData.startTime;
+  const endTimeValue = scheduleData.endTime;
 
   const startTimeParts = startTimeValue.split(':');
   const endTimeParts = endTimeValue.split(':');

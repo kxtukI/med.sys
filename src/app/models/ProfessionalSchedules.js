@@ -74,6 +74,32 @@ class ProfessionalSchedules extends Model {
                 tableName: 'professional_schedules',
                 underscored: true,
                 timestamps: true,
+                hooks: {
+                    afterFind: (data) => {
+                        if (Array.isArray(data)) {
+                            data.forEach(instance => {
+                                // Ensure camelCase properties are available
+                                if (instance && instance.dataValues) {
+                                    instance.dataValues.startTime = instance.dataValues.start_time;
+                                    instance.dataValues.endTime = instance.dataValues.end_time;
+                                    instance.dataValues.durationMinutes = instance.dataValues.duration_minutes;
+                                    instance.dataValues.breakStartTime = instance.dataValues.break_start_time;
+                                    instance.dataValues.breakEndTime = instance.dataValues.break_end_time;
+                                    instance.dataValues.bufferMinutes = instance.dataValues.buffer_minutes;
+                                }
+                            });
+                        } else if (data && data.dataValues) {
+                            // Ensure camelCase properties are available
+                            data.dataValues.startTime = data.dataValues.start_time;
+                            data.dataValues.endTime = data.dataValues.end_time;
+                            data.dataValues.durationMinutes = data.dataValues.duration_minutes;
+                            data.dataValues.breakStartTime = data.dataValues.break_start_time;
+                            data.dataValues.breakEndTime = data.dataValues.break_end_time;
+                            data.dataValues.bufferMinutes = data.dataValues.buffer_minutes;
+                        }
+                        return data;
+                    }
+                }
             }
         );
     }

@@ -390,8 +390,8 @@ class ProfessionalSchedulesController {
         });
       }
 
-      const startTime = start_time !== undefined ? start_time : schedule.start_time;
-      const endTime = end_time !== undefined ? end_time : schedule.end_time;
+      const startTime = start_time !== undefined ? start_time : schedule.startTime;
+      const endTime = end_time !== undefined ? end_time : schedule.endTime;
 
       if (!startTime || !endTime) {
         return res.status(400).json({
