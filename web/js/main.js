@@ -8,7 +8,22 @@ const paginationState = {
     schedules: { currentPage: 1, totalPages: 1 }
 };
 
-const modalConfig = new Map([
+// Mapa de traduções para status
+const statusTranslations = {
+    // Agendamentos
+    'scheduled': 'Agendado',
+    'completed': 'Concluído',
+    'canceled': 'Cancelado',
+    // Reservas
+    'reserved': 'Reservado',
+    'ready': 'Pronto para Retirada',
+    'picked_up': 'Retirado',
+    'expired': 'Expirado'
+};
+
+function translateStatus(status) {
+    return statusTranslations[status] || status;
+}const modalConfig = new Map([
     ['add-professional-btn', { id: 'professional-modal', title: 'Novo Profissional' }],
     ['add-patient-btn', { id: 'patient-modal', title: 'Novo Paciente' }],
     ['add-medication-btn', { id: 'medication-modal', title: 'Novo Medicamento' }],
@@ -89,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
     );
 
     const closeModalButtons = document.querySelectorAll(
-        '#close-modal-btn, #cancel-modal-btn, #modal-overlay, #prof-close-modal-btn, #prof-cancel-modal-btn, #close-schedule-btn, #cancel-schedule-btn, .close-modal-btn, #cancel-record-btn'
+        '#close-modal-btn, #cancel-modal-btn, #modal-overlay, #prof-close-modal-btn, #prof-cancel-modal-btn, #close-schedule-btn, #cancel-schedule-btn, #close-inventory-modal-btn, #inventory-cancel-btn, .close-modal-btn, #cancel-record-btn'
     );
 
     const modalOverlay = document.getElementById('modal-overlay');
@@ -249,9 +264,25 @@ function displayFormError(errorElement, error) {
 function formatApiDateTime(isoString) {
     if (!isoString) return 'N/A';
     try {
-        const d = new Date(isoString);
-        return `${d.toLocaleDateString('pt-BR')} - ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
-    } catch (e) { return 'Data inválida'; }
+        // Verifica se já está no formato DD/MM/YYYY HH:MM
+        const alreadyFormatted = isoString.match(/(\d{2})\/(\d{2})\/(\d{4})\s(\d{2}):(\d{2})/);
+        if (alreadyFormatted) {
+            const [, day, month, year, hours, minutes] = alreadyFormatted;
+            return `${day}/${month}/${year} - ${hours}:${minutes}`;
+        }
+        
+        // Parse para formato ISO: 2025-12-01T10:00:00
+        const isoFormatted = isoString.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
+        if (isoFormatted) {
+            const [, year, month, day, hours, minutes] = isoFormatted;
+            return `${day}/${month}/${year} - ${hours}:${minutes}`;
+        }
+        
+        return 'Data inválida';
+    } catch (e) { 
+        console.error('Erro ao formatar data:', e);
+        return 'Data inválida'; 
+    }
 }
 
 function formatISOToDatetimeLocal(isoString) {
@@ -624,53 +655,96 @@ function setupMedicationModalForm() {
 }
 
 async function loadInventoryData() {
-    const tableBody = document.getElementById('inventory-table-body');
-    if (!tableBody) return;
-    tableBody.innerHTML = '<tr><td colspan="4">Carregando...</td></tr>';
+    const grid = document.getElementById('inventory-grid');
+    if (!grid) return;
+    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem;">Carregando...</div>';
 
     const unitId = document.getElementById('filter-unit')?.value || '';
+    const status = document.getElementById('filter-status')?.value || '';
     const page = paginationState.inventory.currentPage;
     const params = new URLSearchParams({ page: page, limit: '20' });
     if (unitId) params.append('health_unit_id', unitId);
 
     try {
         const data = await globalThis.api.get(`/medication_inventory?${params.toString()}`);
-        const inventoryItems = data.data;
+        let inventoryItems = data.data;
+
+        // Filtrar por status se necessário
+        if (status) {
+            inventoryItems = inventoryItems.filter(item => {
+                const qty = item.available_quantity;
+                if (status === 'adequate') return qty > 10;
+                if (status === 'low') return qty > 0 && qty <= 10;
+                if (status === 'out') return qty === 0;
+                return true;
+            });
+        }
 
         paginationState.inventory.currentPage = data.page;
         paginationState.inventory.totalPages = data.pages;
         renderPaginationControls('inventory');
 
         if (!inventoryItems || inventoryItems.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="4">Nenhum item encontrado.</td></tr>';
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem;">Nenhum item encontrado.</div>';
             return;
         }
 
-        tableBody.innerHTML = '';
+        grid.innerHTML = '';
         for (const item of inventoryItems) {
-            const row = document.createElement('tr');
+            const card = document.createElement('div');
+            card.className = 'inventory-card';
+            card.setAttribute('data-inventory-id', item.id);
+            
             const qty = item.available_quantity;
-
-            let statusBadge = '';
-            if (qty > 10) {
-                statusBadge = '<span class="status-badge status-ok">Em estoque</span>';
-            } else if (qty > 0) {
-                statusBadge = '<span class="status-badge status-low">Baixo</span>';
-            } else {
-                statusBadge = '<span class="status-badge status-canceled">Sem estoque</span>';
+            let statusClass = 'inventory-status-adequate';
+            let statusText = '✓ Adequado';
+            
+            if (qty === 0) {
+                statusClass = 'inventory-status-out';
+                statusText = '✕ Em Falta';
+            } else if (qty > 0 && qty <= 10) {
+                statusClass = 'inventory-status-low';
+                statusText = '⚠ Baixo';
             }
 
-            row.innerHTML = `
-                <td>${item.medication?.name || 'N/A'}</td>
-                <td>${item.healthUnit?.name || 'N/A'}</td>
-                <td class="stock-qty">${qty}</td>
-                <td>${statusBadge}</td>
+            card.innerHTML = `
+                <div class="inventory-card-header">
+                    <div class="inventory-card-title">${item.medication?.name || 'N/A'}</div>
+                    <span class="inventory-status-badge ${statusClass}">${statusText}</span>
+                </div>
+                <div class="inventory-card-info">
+                    <div class="inventory-card-info-item">
+                        <span class="inventory-card-info-label">Unidade:</span>
+                        <span>${item.healthUnit?.name || 'N/A'}</span>
+                    </div>
+                    <div class="inventory-card-info-item">
+                        <span class="inventory-card-info-label">Categoria:</span>
+                        <span>${item.medication?.category || 'N/A'}</span>
+                    </div>
+                    <div class="inventory-card-info-item">
+                        <span class="inventory-card-info-label">Princípio Ativo:</span>
+                        <span>${item.medication?.active_ingredient || 'N/A'}</span>
+                    </div>
+                </div>
+                <div class="inventory-quantity-display">
+                    <span>${qty}</span>
+                    <span class="inventory-quantity-unit">unidades</span>
+                </div>
+                <div class="inventory-card-actions">
+                    <button class="btn btn-add" data-action="add" data-inventory-id="${item.id}">+ Entrada</button>
+                    <button class="btn btn-remove" data-action="remove" data-inventory-id="${item.id}">- Saída</button>
+                </div>
             `;
-            tableBody.appendChild(row);
+            grid.appendChild(card);
         }
+
+        // Setup event listeners para os botões de ação
+        setupInventoryActionListeners();
+        applyPermissions();
+
     } catch (error) {
         console.error("Erro ao carregar inventário:", error);
-        tableBody.innerHTML = '<tr><td colspan="4">Erro ao carregar dados.</td></tr>';
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #dc3545;">Erro ao carregar dados.</div>';
     }
 }
 
@@ -697,6 +771,135 @@ async function setupInventoryFilters() {
         paginationState.inventory.currentPage = 1;
         loadInventoryData();
     });
+
+    const statusFilter = document.getElementById('filter-status');
+    if (statusFilter) {
+        statusFilter.addEventListener('change', () => {
+            paginationState.inventory.currentPage = 1;
+            loadInventoryData();
+        });
+    }
+}
+
+function setupInventoryActionListeners() {
+    const actionButtons = document.querySelectorAll('[data-action]');
+    actionButtons.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const action = btn.getAttribute('data-action');
+            const inventoryId = btn.getAttribute('data-inventory-id');
+            openInventoryModal(inventoryId, action);
+        });
+    });
+}
+
+async function openInventoryModal(inventoryId, action) {
+    try {
+        console.log('Abrindo modal de inventário', { inventoryId, action });
+        const response = await globalThis.api.get(`/medication_inventory/${inventoryId}`);
+        const inventory = response.inventory;
+        
+        const modal = document.getElementById('inventory-modal');
+        const modalOverlay = document.getElementById('modal-overlay');
+        
+        if (!modal || !modalOverlay) {
+            console.error('Modal ou overlay não encontrado');
+            return;
+        }
+        
+        const form = document.getElementById('inventory-form');
+        
+        document.getElementById('inventory-id').value = inventory.id;
+        document.getElementById('inventory-current').value = inventory.available_quantity;
+        document.getElementById('inventory-medication-info').textContent = 
+            `${inventory.medication?.name || 'Medicamento'} - ${inventory.healthUnit?.name || 'Unidade'}`;
+        document.getElementById('inventory-operation').value = action;
+        document.getElementById('inventory-quantity').value = '';
+        document.getElementById('inventory-reason').value = '';
+        document.getElementById('inventory-form-error').textContent = '';
+        document.getElementById('inventory-form-result').textContent = '';
+        
+        // Limpar listeners anteriores
+        form.replaceWith(form.cloneNode(true));
+        const newForm = document.getElementById('inventory-form');
+        
+        newForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await submitInventoryMovement(inventory);
+        });
+        
+        // Remover classes anteriores e adicionar novas
+        modal.classList.remove('editing', 'creating');
+        modal.classList.add('open');
+        modalOverlay.classList.add('open');
+        
+        console.log('Modal aberto com sucesso');
+        
+    } catch (error) {
+        console.error('Erro ao abrir formulário:', error);
+        alert('Erro ao abrir formulário: ' + error.message);
+    }
+}
+
+async function submitInventoryMovement(inventory) {
+    const inventoryId = document.getElementById('inventory-id').value;
+    const operation = document.getElementById('inventory-operation').value;
+    const quantity = parseInt(document.getElementById('inventory-quantity').value);
+    const reason = document.getElementById('inventory-reason').value;
+    const errorElement = document.getElementById('inventory-form-error');
+    const resultElement = document.getElementById('inventory-form-result');
+    
+    errorElement.textContent = '';
+    resultElement.textContent = '';
+    
+    if (!operation) {
+        errorElement.textContent = 'Selecione o tipo de operação';
+        return;
+    }
+    
+    if (!quantity || quantity < 1) {
+        errorElement.textContent = 'Digite uma quantidade válida';
+        return;
+    }
+    
+    const currentQty = inventory.available_quantity;
+    let newQty = currentQty;
+    
+    if (operation === 'add') {
+        newQty = currentQty + quantity;
+    } else if (operation === 'remove') {
+        if (quantity > currentQty) {
+            errorElement.textContent = `Quantidade inválida. Disponível: ${currentQty}`;
+            return;
+        }
+        newQty = currentQty - quantity;
+    }
+    
+    try {
+        const submitBtn = document.querySelector('#inventory-form button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Processando...';
+        
+        // Atualizar o inventário com a nova quantidade
+        await globalThis.api.put(`/medication_inventory/${inventoryId}`, {
+            available_quantity: newQty
+        });
+        
+        resultElement.textContent = `✓ Movimentação registrada com sucesso! Nova quantidade: ${newQty}`;
+        resultElement.style.color = 'var(--color-success)';
+        
+        setTimeout(() => {
+            document.getElementById('modal-overlay').click();
+            loadInventoryData();
+        }, 1500);
+        
+    } catch (error) {
+        errorElement.textContent = 'Erro ao registrar movimentação: ' + error.message;
+    } finally {
+        const submitBtn = document.querySelector('#inventory-form button[type="submit"]');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Registrar Movimentação';
+    }
 }
 
 async function loadReservationsData() {
@@ -723,18 +926,25 @@ async function loadReservationsData() {
         for (const res of reservations) {
             const row = document.createElement('tr');
             const pickupDate = formatApiDateTime(res.scheduled_pickup_at);
+            const translatedStatus = translateStatus(res.status);
             let actionButtons = '';
             if (res.status === 'reserved') {
-                actionButtons = `<button class="btn btn-secondary btn-sm btn-update-status" data-id="${res.id}" data-new-status="ready">Pronto</button>`;
+                actionButtons = `<button class="btn btn-secondary btn-sm btn-update-status" data-id="${res.id}" data-new-status="ready">Marcar Pronto</button>
+                <button class="btn btn-danger btn-sm btn-cancel-reservation" data-id="${res.id}">Cancelar</button>`;
             } else if (res.status === 'ready') {
-                actionButtons = `<button class="btn btn-secondary btn-sm btn-update-status" data-id="${res.id}" data-new-status="picked_up">Retirado</button>`;
+                actionButtons = `<button class="btn btn-secondary btn-sm btn-update-status" data-id="${res.id}" data-new-status="picked_up">Confirmar Retirada</button>
+                <button class="btn btn-danger btn-sm btn-cancel-reservation" data-id="${res.id}">Cancelar</button>`;
+            } else if (res.status === 'canceled') {
+                actionButtons = `<span class="status-badge status-canceled">Cancelada</span>`;
+            } else {
+                actionButtons = `<span class="status-badge status-success">Finalizada</span>`;
             }
 
             row.innerHTML = `
                 <td>${res.patient?.users?.name || 'N/A'}</td>
                 <td>${res.medication?.name || 'N/A'}</td>
                 <td>${pickupDate}</td>
-                <td>${res.status}</td>
+                <td>${translatedStatus}</td>
                 <td class="actions">${actionButtons}</td>
             `;
             tableBody.appendChild(row);
@@ -818,7 +1028,8 @@ async function loadAppointmentsData() {
         tableBody.innerHTML = '';
         for (const app of appointments) {
             const row = document.createElement('tr');
-            const statusBadge = `<span class="status-badge status-${app.status || 'unknown'}">${app.status || '?'}</span>`;
+            const translatedStatus = translateStatus(app.status || 'unknown');
+            const statusBadge = `<span class="status-badge status-${app.status || 'unknown'}">${translatedStatus}</span>`;
 
             const recordBtn = app.status !== 'canceled'
                 ? `<button class="btn-icon btn-record" title="Prontuário" onclick="globalThis.openMedicalRecordModal(${app.id})">📋</button>`
@@ -1333,3 +1544,168 @@ function initAppointmentModalListeners() {
         });
     }
 }
+
+// --- CALENDAR FUNCTIONS ---
+let currentCalendarDate = new Date();
+let allAppointments = [];
+
+function initializeCalendar() {
+    const calendarDaysContainer = document.getElementById('calendar-days');
+    if (!calendarDaysContainer) return;
+
+    renderCalendar();
+    setupCalendarNavigation();
+    loadCalendarAppointments();
+    
+    // Load today's appointments on initialization
+    setTimeout(() => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+        loadUpcomingAppointments(todayStr);
+    }, 500);
+}
+
+function renderCalendar() {
+    const year = currentCalendarDate.getFullYear();
+    const month = currentCalendarDate.getMonth();
+    
+    // Update header
+    const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+                       'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    document.getElementById('calendar-month-year').textContent = `${monthNames[month]} ${year}`;
+    
+    // Get first day of month and number of days
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+    
+    const calendarDays = document.getElementById('calendar-days');
+    calendarDays.innerHTML = '';
+    
+    // Previous month days
+    for (let i = firstDay - 1; i >= 0; i--) {
+        const day = daysInPrevMonth - i;
+        const dayElement = createDayElement(day, true);
+        calendarDays.appendChild(dayElement);
+    }
+    
+    // Current month days
+    const today = new Date();
+    for (let day = 1; day <= daysInMonth; day++) {
+        const isToday = day === today.getDate() && 
+                       month === today.getMonth() && 
+                       year === today.getFullYear();
+        
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const hasAppointment = allAppointments.some(apt => apt.date === dateStr);
+        
+        const dayElement = createDayElement(day, false, isToday, hasAppointment, dateStr);
+        calendarDays.appendChild(dayElement);
+    }
+    
+    // Next month days
+    const remainingDays = 42 - (firstDay + daysInMonth);
+    for (let day = 1; day <= remainingDays; day++) {
+        const dayElement = createDayElement(day, true);
+        calendarDays.appendChild(dayElement);
+    }
+}
+
+function createDayElement(day, isOtherMonth, isToday = false, hasAppointment = false, dateStr = '') {
+    const element = document.createElement('div');
+    element.className = 'calendar-day';
+    element.textContent = day;
+    
+    if (isOtherMonth) {
+        element.classList.add('other-month');
+    } else {
+        if (isToday) element.classList.add('today');
+        if (hasAppointment) element.classList.add('has-event');
+        
+        if (dateStr) {
+            element.addEventListener('click', () => {
+                document.querySelectorAll('.calendar-day.selected').forEach(el => {
+                    el.classList.remove('selected');
+                });
+                element.classList.add('selected');
+                loadUpcomingAppointments(dateStr);
+            });
+        }
+    }
+    
+    return element;
+}
+
+function setupCalendarNavigation() {
+    const prevBtn = document.getElementById('calendar-prev');
+    const nextBtn = document.getElementById('calendar-next');
+    
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+            renderCalendar();
+        });
+    }
+    
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+            renderCalendar();
+        });
+    }
+}
+
+async function loadCalendarAppointments() {
+    try {
+        const res = await globalThis.api.get('/appointments?limit=1000');
+        allAppointments = res.data.map(apt => {
+            // Parse date from ISO or formatted string
+            let dateStr = '';
+            if (apt.date_time) {
+                // Try to extract from various formats
+                const match = apt.date_time.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+                if (match) {
+                    // Convert DD/MM/YYYY to YYYY-MM-DD
+                    const [, day, month, year] = match;
+                    dateStr = `${year}-${month}-${day}`;
+                } else if (apt.date_time.includes('T')) {
+                    // ISO format
+                    dateStr = apt.date_time.split('T')[0];
+                }
+            }
+            return { ...apt, date: dateStr };
+        });
+        renderCalendar();
+    } catch (error) {
+        console.error('Erro ao carregar agendamentos:', error);
+    }
+}
+
+function loadUpcomingAppointments(selectedDate) {
+    const container = document.getElementById('upcoming-appointments');
+    
+    const selectedAppointments = allAppointments.filter(apt => apt.date === selectedDate);
+    
+    if (selectedAppointments.length === 0) {
+        container.innerHTML = '<p class="empty-state">Nenhum agendamento para este dia</p>';
+        return;
+    }
+    
+    container.innerHTML = selectedAppointments.map(apt => `
+        <div class="upcoming-item">
+            <div class="upcoming-item-time">${apt.date_time}</div>
+            <div class="upcoming-item-patient"><strong>${apt.patient?.users?.name || 'N/A'}</strong></div>
+            <div class="upcoming-item-professional">${apt.professional?.user?.name || 'N/A'}</div>
+        </div>
+    `).join('');
+}
+
+// Initialize calendar when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('calendar-days')) {
+        initializeCalendar();
+    }
+});

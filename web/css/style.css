@@ -425,6 +425,7 @@ body.dashboard-page {
 .data-table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 800px;
 }
 
 .data-table th,
@@ -453,6 +454,13 @@ body.dashboard-page {
 .data-table .actions {
     display: flex;
     gap: 0.5rem;
+    min-width: 180px;
+    white-space: nowrap;
+}
+
+.data-table .btn-sm {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
 }
 
 .btn-edit { color: var(--color-primary); }
@@ -613,6 +621,163 @@ body.dashboard-page {
 .medication-card-actions .btn-delete:hover {
     background-color: rgba(220, 53, 69, 0.1);
     border-radius: 4px;
+}
+
+.inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.inventory-card {
+    background: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.inventory-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+}
+
+.inventory-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.inventory-card-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--color-text);
+    flex: 1;
+}
+
+.inventory-status-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    white-space: nowrap;
+    margin-left: 0.5rem;
+}
+
+.inventory-status-adequate {
+    background-color: rgba(40, 167, 69, 0.2);
+    color: #155724;
+}
+
+.inventory-status-low {
+    background-color: rgba(255, 193, 7, 0.2);
+    color: #856404;
+}
+
+.inventory-status-out {
+    background-color: rgba(220, 53, 69, 0.2);
+    color: #721c24;
+}
+
+.inventory-card-info {
+    font-size: 0.9rem;
+    color: var(--color-text-light);
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.inventory-card-info-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.inventory-card-info-label {
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.inventory-quantity-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background-color: var(--color-bg);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+.inventory-quantity-unit {
+    font-size: 0.8rem;
+    color: var(--color-text-light);
+    font-weight: 400;
+}
+
+.inventory-card-actions {
+    display: flex;
+    gap: 0.8rem;
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.inventory-card-actions .btn {
+    flex: 1;
+    padding: 0.6rem;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.inventory-card-actions .btn-add {
+    background-color: var(--color-success);
+    color: var(--color-white);
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.inventory-card-actions .btn-add:hover {
+    background-color: #218838;
+}
+
+.inventory-card-actions .btn-remove {
+    background-color: #ffc107;
+    color: var(--color-text);
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.inventory-card-actions .btn-remove:hover {
+    background-color: #e0a800;
+}
+
+.inventory-card-actions .btn-edit {
+    background-color: var(--color-primary);
+    color: var(--color-white);
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.inventory-card-actions .btn-edit:hover {
+    background-color: var(--color-primary-dark);
 }
 
 /* 7.4. Paginação */
@@ -786,6 +951,11 @@ body.dashboard-page {
     color: var(--color-danger);
 }
 
+.status-badge.status-expired {
+    background-color: #f0f0f0;
+    color: #666;
+    border: 1px solid #ccc;
+}
 
 /* --- 8. Media Queries (Responsividade) --- */
 
@@ -823,5 +993,204 @@ body.dashboard-page {
 
     .modal {
         max-width: 700px; 
+    }
+}
+
+/* --- CALENDÁRIO --- */
+.dashboard-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.calendar-card {
+    padding: 1.5rem;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+}
+
+.calendar-header h3 {
+    flex: 1;
+    text-align: center;
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.calendar-header .btn-icon {
+    background: none;
+    border: 1px solid var(--color-border);
+    padding: 0.4rem 0.8rem;
+    cursor: pointer;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    transition: all 0.2s ease;
+}
+
+.calendar-header .btn-icon:hover {
+    background-color: var(--color-bg);
+    color: var(--color-primary);
+}
+
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.weekday {
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--color-text-light);
+    padding: 0.5rem;
+}
+
+.calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: var(--color-white);
+    position: relative;
+}
+
+.calendar-day:hover {
+    background-color: var(--color-bg);
+    border-color: var(--color-primary);
+}
+
+.calendar-day.other-month {
+    color: var(--color-text-light);
+    opacity: 0.5;
+    cursor: default;
+}
+
+.calendar-day.other-month:hover {
+    background-color: var(--color-white);
+    border-color: var(--color-border);
+}
+
+.calendar-day.today {
+    background-color: var(--color-primary);
+    color: var(--color-white);
+    border-color: var(--color-primary);
+    font-weight: 600;
+}
+
+.calendar-day.today:hover {
+    background-color: var(--color-primary-dark);
+    border-color: var(--color-primary-dark);
+}
+
+.calendar-day.selected {
+    background-color: var(--color-info);
+    color: var(--color-white);
+    border-color: var(--color-info);
+}
+
+.calendar-day.has-event::after {
+    content: '•';
+    position: absolute;
+    bottom: 2px;
+    font-size: 1.2rem;
+    color: var(--color-warning);
+}
+
+.upcoming-events-card {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.upcoming-events-card h3 {
+    margin-bottom: 1rem;
+}
+
+.upcoming-list {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 400px;
+}
+
+.upcoming-item {
+    padding: 1rem;
+    border-left: 4px solid var(--color-info);
+    background-color: var(--color-white);
+    margin-bottom: 0.75rem;
+    border-radius: var(--border-radius);
+    transition: all 0.2s ease;
+    border: 1px solid var(--color-border);
+    border-left: 4px solid var(--color-info);
+}
+
+.upcoming-item:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateX(4px);
+    border-left-color: var(--color-primary);
+}
+
+.upcoming-item-time {
+    font-size: 0.9rem;
+    color: var(--color-primary);
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.upcoming-item-time::before {
+    content: '🕐';
+}
+
+.upcoming-item-patient {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+    color: var(--color-text);
+}
+
+.upcoming-item-professional {
+    font-size: 0.85rem;
+    color: var(--color-text-light);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.upcoming-item-professional::before {
+    content: '👨‍⚕️';
+    font-size: 0.9rem;
+}
+
+.empty-state {
+    text-align: center;
+    color: var(--color-text-light);
+    padding: 2rem 0;
+}
+
+@media (max-width: 1024px) {
+    .dashboard-content {
+        grid-template-columns: 1fr;
     }
 }

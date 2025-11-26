@@ -30,6 +30,7 @@ class ProfessionalSchedulesController {
 
       const schedules = await ProfessionalSchedules.findAndCountAll({
         where,
+        attributes: ['id', 'professional_id', 'health_unit_id', 'day_of_week', 'start_time', 'end_time', 'duration_minutes', 'break_start_time', 'break_end_time', 'buffer_minutes', 'createdAt', 'updatedAt'],
         include: [
           {
             model: Professionals,
@@ -57,11 +58,24 @@ class ProfessionalSchedulesController {
         offset,
       });
 
+      const data = schedules.rows.map(schedule => {
+        const obj = schedule.toJSON();
+        return {
+          ...obj,
+          startTime: obj.start_time,
+          endTime: obj.end_time,
+          durationMinutes: obj.duration_minutes,
+          breakStartTime: obj.break_start_time,
+          breakEndTime: obj.break_end_time,
+          bufferMinutes: obj.buffer_minutes,
+        };
+      });
+
       return res.json({
         total: schedules.count,
         limit,
         offset,
-        data: schedules.rows,
+        data,
       });
     } catch (error) {
       return res.status(500).json({
@@ -102,7 +116,16 @@ class ProfessionalSchedulesController {
         });
       }
 
-      return res.json(schedule);
+      const obj = schedule.toJSON();
+      return res.json({
+        ...obj,
+        startTime: obj.start_time,
+        endTime: obj.end_time,
+        durationMinutes: obj.duration_minutes,
+        breakStartTime: obj.break_start_time,
+        breakEndTime: obj.break_end_time,
+        bufferMinutes: obj.buffer_minutes,
+      });
     } catch (error) {
       return res.status(500).json({
         error: 'Erro ao buscar horário',
