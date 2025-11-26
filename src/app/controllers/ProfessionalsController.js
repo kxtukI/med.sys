@@ -113,6 +113,28 @@ class ProfessionalsController {
       return res.status(400).json({ error: 'Registro profissional já cadastrado.' });
     }
 
+    // Validar se as unidades de saúde existem
+    console.log('[DEBUG] Validando health_unit_ids:', health_unit_ids);
+    const existingUnits = await HealthUnit.findAll({
+      where: { id: health_unit_ids },
+      attributes: ['id', 'name']
+    });
+
+    console.log('[DEBUG] Unidades encontradas:', existingUnits.map(u => ({ id: u.id, name: u.name })));
+
+    if (existingUnits.length !== health_unit_ids.length) {
+      const foundIds = existingUnits.map(u => u.id);
+      const missingIds = health_unit_ids.filter(id => !foundIds.includes(id));
+      console.error('[ERRO] Unidades não encontradas:', missingIds);
+      return res.status(400).json({
+        error: 'Erro ao criar profissional',
+        details: `Unidades de saúde não encontradas: ${missingIds.join(', ')}`,
+        requestedIds: health_unit_ids,
+        foundIds: foundIds,
+        missingIds: missingIds
+      });
+    }
+
     const professionalData = { professional_register, professional_type, specialty };
 
     if (req.file && req.file.cloudinaryUrl) {
@@ -144,6 +166,7 @@ class ProfessionalsController {
 
       return res.json({ professional: createdProfessional });
     } catch (error) {
+      console.error('[ERRO] Ao criar profissional:', error.message);
       return res.status(400).json({ error: 'Erro ao criar profissional', details: error.message });
     }
   }
