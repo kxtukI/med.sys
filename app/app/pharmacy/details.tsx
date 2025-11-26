@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  Image, ActivityIndicator
+  Image, ActivityIndicator, Modal, TextInput, Alert, KeyboardAvoidingView, Platform
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
@@ -13,7 +13,9 @@ const COLORS = {
   divider: '#EEE',
   textPrimary: '#333',
   textSecondary: '#666',
-  success: '#E0F2F1', warning: '#FFF3E0', danger: '#FFEBEE'
+  success: '#E0F2F1', warning: '#FFF3E0', danger: '#FFEBEE',
+  // Adicionei uma cor para o botão desabilitado
+  disabled: '#BDBDBD'
 };
 
 export default function MedicationDetails() {
@@ -25,13 +27,19 @@ export default function MedicationDetails() {
   const [details, setDetails] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  // Estados para o Modal de Reserva
+  const [modalVisible, setModalVisible] = useState(false);
+  const [reserveQty, setReserveQty] = useState('1');
+  const [reserveNotes, setReserveNotes] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
   useEffect(() => {
     async function fetchFullDetails() {
       try {
-        // Busca os dados completos (incluindo contraindicações) pelo ID
+        // Busca os dados completos (incluindo contraindicações) pelo ID [cite: 953]
         const response = await api.get(`/medications/${initialItem.medication.id}`);
         if (response.data && response.data.medication) {
-            setDetails(response.data.medication);
+          setDetails(response.data.medication);
         }
       } catch (error) {
         console.log("Erro ao buscar detalhes:", error);
@@ -41,6 +49,60 @@ export default function MedicationDetails() {
     }
     fetchFullDetails();
   }, [initialItem.medication.id]);
+
+  // Função para realizar a reserva
+  const handleReserve = async () => {
+    const qty = parseInt(reserveQty);
+
+    if (isNaN(qty) || qty <= 0) {
+      Alert.alert('Erro', 'Por favor, insira uma quantidade válida.');
+      return;
+    }
+
+    if (qty > initialItem.available_quantity) {
+      Alert.alert('Estoque Insuficiente', `A quantidade máxima disponível é ${initialItem.available_quantity}.`);
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      // Definindo data de retirada para 24h a partir de agora (Regra de negócio sugerida)
+      // A API exige formato ISO: YYYY-MM-DDTHH:mm:ssZ [cite: 924]
+      const pickupDate = new Date();
+      pickupDate.setHours(pickupDate.getHours() + 24);
+
+      const payload = {
+        medication_id: initialItem.medication.id, //
+        health_unit_id: initialItem.healthUnit.id || initialItem.health_unit_id, // Garante pegar o ID da unidade
+        quantity: qty, //
+        scheduled_pickup_at: pickupDate.toISOString(), //
+        notes: reserveNotes //
+      };
+
+      await api.post('/medication_reservations', payload);
+
+      Alert.alert('Sucesso', 'Medicamento reservado com sucesso!', [
+        {
+          text: 'OK',
+          onPress: () => {
+            setModalVisible(false);
+            router.back(); // Volta para a lista
+          }
+        }
+      ]);
+
+    } catch (error: any) {
+      console.log('Erro reserva:', error.response?.data);
+      if (error.response?.status === 409) { //
+        Alert.alert('Erro', 'Quantidade insuficiente no estoque.');
+      } else {
+        Alert.alert('Erro', 'Não foi possível realizar a reserva. Tente novamente.');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   // Mescla dados da lista com dados completos da API
   const medication = { ...initialItem.medication, ...details };
@@ -52,6 +114,7 @@ export default function MedicationDetails() {
   };
 
   const status = getStatus(initialItem.available_quantity);
+  const canReserve = initialItem.available_quantity > 0;
 
   return (
     <View style={styles.container}>
@@ -113,7 +176,6 @@ export default function MedicationDetails() {
                     {medication.active_ingredient || "Não informado."}
                 </Text>
 
-                {/* --- NOVA SEÇÃO ADICIONADA --- */}
                 <Text style={styles.sectionTitle}>Contraindicações</Text>
                 <Text style={[styles.description, { color: '#D32F2F' }]}>
                     {medication.contraindications || "Nenhuma contraindicação cadastrada."}
@@ -121,6 +183,88 @@ export default function MedicationDetails() {
             </>
         )}
       </ScrollView>
+
+      {/* Botão de Reservar Fixo no Rodapé */}
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={[styles.reserveButton, !canReserve && styles.reserveButtonDisabled]}
+          onPress={() => setModalVisible(true)}
+          disabled={!canReserve}
+        >
+          <Text style={styles.reserveButtonText}>
+            {canReserve ? 'Reservar Medicamento' : 'Indisponível para Reserva'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Modal de Reserva */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Confirmar Reserva</Text>
+            <Text style={styles.modalSubtitle}>
+              Você está reservando: {medication.name}
+            </Text>
+            <Text style={styles.modalInfo}>
+              Unidade: {initialItem.healthUnit.name}
+            </Text>
+
+            <Text style={styles.label}>Quantidade:</Text>
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              value={reserveQty}
+              onChangeText={setReserveQty}
+              placeholder="Ex: 1"
+            />
+
+            <Text style={styles.label}>Notas (Opcional):</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={reserveNotes}
+              onChangeText={setReserveNotes}
+              placeholder="Ex: Retiro amanhã à tarde"
+              multiline
+              numberOfLines={3}
+            />
+
+            <Text style={styles.helperText}>
+              * A reserva ficará válida por 24h a partir de agora.
+            </Text>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.cancelBtn]}
+                onPress={() => setModalVisible(false)}
+                disabled={submitting}
+              >
+                <Text style={styles.cancelBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.confirmBtn]}
+                onPress={handleReserve}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.confirmBtnText}>Confirmar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
     </View>
   );
 }
@@ -141,7 +285,7 @@ const styles = StyleSheet.create({
   backButton: { marginRight: 15 },
   headerTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold', flex: 1 },
 
-  content: { padding: 24, alignItems: 'center', paddingBottom: 40 },
+  content: { padding: 24, alignItems: 'center', paddingBottom: 100 }, // Aumentei o paddingBottom para o footer não cobrir o texto
 
   iconWrapper: { marginBottom: 20, marginTop: 10 },
   bigIcon: {
@@ -173,5 +317,43 @@ const styles = StyleSheet.create({
   description: {
     alignSelf: 'flex-start', fontSize: 15, color: COLORS.textSecondary,
     lineHeight: 22, marginBottom: 10, textAlign: 'left'
-  }
+  },
+
+  // Estilos do Footer e Botão
+  footer: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    padding: 20, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#eee',
+    elevation: 10
+  },
+  reserveButton: {
+    backgroundColor: COLORS.primary, padding: 16, borderRadius: 12, alignItems: 'center',
+    shadowColor: "#000", shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.2, shadowRadius: 2
+  },
+  reserveButtonDisabled: {
+    backgroundColor: COLORS.disabled
+  },
+  reserveButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+
+  // Estilos do Modal
+  modalOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20
+  },
+  modalContent: {
+    backgroundColor: '#fff', borderRadius: 20, padding: 20, elevation: 5
+  },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.primary, marginBottom: 5 },
+  modalSubtitle: { fontSize: 16, color: '#333', marginBottom: 5 },
+  modalInfo: { fontSize: 14, color: '#666', marginBottom: 20 },
+  label: { fontSize: 14, fontWeight: 'bold', color: '#333', marginTop: 10, marginBottom: 5 },
+  input: {
+    borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 12, fontSize: 16, backgroundColor: '#f9f9f9'
+  },
+  textArea: { height: 80, textAlignVertical: 'top' },
+  helperText: { fontSize: 12, color: '#888', marginTop: 10, fontStyle: 'italic' },
+  modalButtons: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 25 },
+  modalBtn: { flex: 1, padding: 15, borderRadius: 8, alignItems: 'center' },
+  cancelBtn: { backgroundColor: '#f5f5f5', marginRight: 10 },
+  confirmBtn: { backgroundColor: COLORS.primary, marginLeft: 10 },
+  cancelBtnText: { color: '#666', fontWeight: 'bold' },
+  confirmBtnText: { color: '#fff', fontWeight: 'bold' }
 });

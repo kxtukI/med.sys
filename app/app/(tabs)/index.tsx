@@ -4,7 +4,7 @@ import {
   ActivityIndicator, RefreshControl, StatusBar, Alert
 } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 
@@ -19,14 +19,15 @@ interface Appointment {
     user: { name: string; }
   };
   health_unit: { name: string; };
+  patient?: {
+      users?: { id: number; }
+  }
 }
 
-// Função robusta para ler datas (ISO ou BR)
 const parseAndFormatDate = (dateString: string) => {
     if (!dateString) return { line1: '--', line2: '--', timestamp: 0 };
     let dateObj = new Date();
 
-    // Tenta corrigir formato BR "DD/MM/YYYY HH:mm" para ISO
     if (dateString.includes('/')) {
         const [datePart, timePart] = dateString.split(' ');
         const [day, month, year] = datePart.split('/');
@@ -48,16 +49,17 @@ const parseAndFormatDate = (dateString: string) => {
     };
 };
 
-// Gera os dias do calendário (Hoje + 5 dias)
 const getCalendarDays = () => {
   const days = [];
   const today = new Date();
   for (let i = 0; i < 6; i++) {
     const date = new Date(today);
     date.setDate(today.getDate() + i);
-    const dayNumber = date.getDate();
-    const weekDay = date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '').toUpperCase();
-    days.push({ day: dayNumber, week: weekDay, active: i === 0 });
+    days.push({
+        day: date.getDate(),
+        week: date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '').toUpperCase(),
+        active: i === 0
+    });
   }
   return days;
 };
@@ -71,110 +73,88 @@ export default function Home() {
   const calendarDays = getCalendarDays();
 
   const fetchAppointments = useCallback(async () => {
-      try {
-        const response = await api.get(`/appointments?patient_id=${user?.id}&status=scheduled`);
-        let data = response.data.data || [];
+    try {
+      // --- CORREÇÃO AQUI ---
+      // 1. Removemos o 'patient_id' da URL para a API não filtrar errado.
+      // 2. Adicionamos 'limit=100' para garantir que sua consulta venha na lista.
+      const response = await api.get(`/appointments?status=scheduled&limit=100`);
+      const allData = response.data.data || [];
 
-        // --- INJEÇÃO DE DADOS PARA TESTE ---
-        const hasJuliana = data.some((app: any) => app.professional?.user?.name.includes('Juliana'));
-        if (!hasJuliana) {
-            const fakeAppointment = {
-                id: 999, date_time: "2025-12-01T14:00:00", specialty: "Pediatra", status: "scheduled",
-                professional: { user: { name: "Dra. Camila Farias" } }, health_unit: { name: "UBS ZONA SUL" }
-            };
-            data = [fakeAppointment, ...data];
-        }
-        // ------------------------------------------------------
+      // 3. FILTRO MANUAL: Onde 'patient.users.id' é igual ao MEU ID (14)
+      const myAppointments = allData.filter((app: any) => {
+          const appUserId = app.patient?.users?.id || app.patient?.user_id;
+          return String(appUserId) === String(user?.id);
+      });
 
-        const sorted = data.sort((a: any, b: any) => parseAndFormatDate(a.date_time).timestamp - parseAndFormatDate(b.date_time).timestamp);
-        setAppointments(sorted);
-      } catch (error) {
-        console.log('Usando fallback visual');
-        setAppointments([{ id: 999, date_time: "2025-12-01T14:00:00", specialty: "Pediatra", status: "scheduled", professional: { user: { name: "Dra. Camila Farias" } }, health_unit: { name: "UBS ZONA SUL" } }]);
-      } finally { setLoading(false); setRefreshing(false); }
-    }, [user?.id]);
+      const sorted = myAppointments.sort((a: any, b: any) => {
+          const timeA = parseAndFormatDate(a.date_time).timestamp;
+          const timeB = parseAndFormatDate(b.date_time).timestamp;
+          return timeA - timeB;
+      });
 
-  useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
+      setAppointments(sorted);
+    } catch (error) {
+      console.log('Erro ao buscar home:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [user?.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchAppointments();
+    }, [fetchAppointments])
+  );
+
   const onRefresh = () => { setRefreshing(true); fetchAppointments(); };
 
   const handleLogout = () => {
-    Alert.alert('Sair', 'Deseja realmente sair?', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Sair', style: 'destructive', onPress: signOut }
-    ]);
+    Alert.alert('Sair', 'Deseja realmente sair?', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Sair', style: 'destructive', onPress: signOut }]);
   };
 
   const goToExplore = (term: string) => {
       router.push({ pathname: '/(tabs)/explore', params: { specialty: term } } as any);
   };
 
-  // --- RENDERIZAÇÃO DOS COMPONENTES ---
-
   const renderHeader = () => (
     <View style={styles.header}>
       <View style={styles.headerTop}>
         <View style={styles.userInfo}>
-          <View style={styles.avatar}>
-             <Text style={styles.avatarText}>{user?.name?.charAt(0)}</Text>
-          </View>
+          <View style={styles.avatar}><Text style={styles.avatarText}>{user?.name?.charAt(0)}</Text></View>
           <View>
             <Text style={styles.welcomeLabel}>Bem-Vindo de Volta</Text>
-            <Text style={styles.userName}>
-              {user?.name ? user.name.split(' ')[0] : 'Paciente'}
-            </Text>
+            <Text style={styles.userName}>{user?.name ? user.name.split(' ')[0] : 'Paciente'}</Text>
           </View>
         </View>
         <View style={styles.headerIcons}>
-          <TouchableOpacity style={styles.iconButton} onPress={() => Alert.alert("Sem notificações")}>
-              <Ionicons name="notifications-outline" size={24} color="#333" />
-          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconButton} onPress={() => Alert.alert("Sem notificações")}><Ionicons name="notifications-outline" size={24} color="#333" /></TouchableOpacity>
         </View>
       </View>
     </View>
   );
 
   const renderCategories = () => (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Categorias</Text>
-        <TouchableOpacity onPress={() => router.push('/specialties' as any)}>
-            <Text style={styles.seeAll}>Veja tudo</Text>
-        </TouchableOpacity>
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Categorias</Text>
+          <TouchableOpacity onPress={() => router.push('/specialties' as any)}><Text style={styles.seeAll}>Veja tudo</Text></TouchableOpacity>
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoriesContent}
+          style={styles.categoriesScroll}
+        >
+          <CategoryItem icon="user-md" lib="FontAwesome5" label="Doutores" onPress={() => router.push('/(tabs)/explore' as any)} />
+          <CategoryItem icon="capsules" lib="FontAwesome5" label="Farmácia" onPress={() => router.push('/pharmacy' as any)} />
+          <CategoryItem icon="plus-circle" lib="FontAwesome5" label="Espec." onPress={() => router.push('/specialties' as any)} />
+          <CategoryItem icon="chatbubbles" lib="Ionicons" label="Chat IA" onPress={() => router.push('/chat' as any)} />
+          <CategoryItem icon="file-medical" lib="FontAwesome5" label="Prontuário" onPress={() => Alert.alert("Prontuário", "Em breve.")} />
+        </ScrollView>
       </View>
-
-      {/* ScrollView centralizado */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.categoriesContent} // Centraliza os itens
-        style={styles.categoriesScroll}
-      >
-        {/* Botão Doutores -> Explorar */}
-        <CategoryItem
-            icon="user-md" lib="FontAwesome5" label="Doutores"
-            onPress={() => router.push('/(tabs)/explore' as any)}
-        />
-
-        {/* Botão Farmácia -> Farmácia */}
-        <CategoryItem
-            icon="capsules" lib="FontAwesome5" label="Farmácia"
-            onPress={() => router.push('/pharmacy' as any)}
-        />
-
-        {/* Botão Espec. -> Especialidades */}
-        <CategoryItem
-            icon="plus-circle" lib="FontAwesome5" label="Espec."
-            onPress={() => router.push('/specialties' as any)}
-        />
-
-        {/* Botão Prontuário -> Alerta (Futuro) */}
-        <CategoryItem
-            icon="file-medical" lib="FontAwesome5" label="Prontuário"
-            onPress={() => Alert.alert("Prontuário", "Seu histórico está atualizado.")}
-        />
-      </ScrollView>
-    </View>
-  );
+    );
 
   const renderUpcoming = () => (
     <View style={styles.greenSection}>
@@ -257,8 +237,6 @@ export default function Home() {
   );
 }
 
-// --- SUB-COMPONENTES ---
-
 const CategoryItem = ({ icon, lib, label, onPress }: any) => (
   <TouchableOpacity style={styles.categoryItem} onPress={onPress}>
     <View style={styles.categoryIcon}>
@@ -285,8 +263,6 @@ const SpecialtyCard = ({ icon, name, color, onPress }: any) => (
   </TouchableOpacity>
 );
 
-// --- ESTILOS ---
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
 
@@ -306,7 +282,7 @@ const styles = StyleSheet.create({
   seeAll: { color: '#2A9F85', fontSize: 14 },
 
   categoriesScroll: { paddingBottom: 10 },
-  categoriesContent: { flexGrow: 1, justifyContent: 'space-between' }, // Centraliza e distribui
+  categoriesContent: { flexGrow: 1, justifyContent: 'space-between' },
 
   categoryItem: { alignItems: 'center', minWidth: 70 },
   categoryIcon: { width: 50, height: 50, borderRadius: 15, backgroundColor: '#F0FDF4', justifyContent: 'center', alignItems: 'center', marginBottom: 8 },

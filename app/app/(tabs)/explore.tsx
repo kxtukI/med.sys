@@ -1,34 +1,74 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import {
+  View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity,
+  ActivityIndicator, Image // <--- Import Image
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from '../../services/api';
 
+interface ProfessionalUser {
+  user_id: number;
+  name: string;
+  email: string;
+  phone: string;
+}
+
+interface HealthUnit {
+  id: number;
+  name: string;
+  city: string;
+}
+
 interface Professional {
   professional_id: number;
-  id?: number;
+  id?: number; // Fallback
   specialty: string;
-  user: { name: string; email: string; };
-  health_units: { name: string; }[];
+  photo_url?: string; // <--- Campo da Foto
+  user: ProfessionalUser;
+  health_units: HealthUnit[];
 }
 
 export default function Explore() {
   const router = useRouter();
   const params = useLocalSearchParams();
+
   const [search, setSearch] = useState('');
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const fetchProfessionals = useCallback(async (term = '', type: 'name' | 'specialty' = 'name') => {
-    setLoading(true); setError('');
+    setLoading(true);
+    setError('');
+
     let endpoint = '/professionals';
-    if (term) endpoint += `?${type}=${term}`;
+    if (term && type === 'specialty') {
+        endpoint += `?specialty=${term}`;
+    }
+
+    console.log(`[DEBUG] Buscando em: ${endpoint}`);
+
     try {
       const response = await api.get(endpoint);
-      setProfessionals(response.data.data || []);
-    } catch (err: any) { setError("Não foi possível carregar os profissionais."); }
-    finally { setLoading(false); }
+      let data = response.data.data || [];
+
+      // Filtro local por Nome (se necessário)
+      if (term && type === 'name') {
+          const lowerTerm = term.toLowerCase();
+          data = data.filter((prof: any) =>
+              prof.user.name.toLowerCase().includes(lowerTerm) ||
+              prof.specialty.toLowerCase().includes(lowerTerm)
+          );
+      }
+
+      setProfessionals(data);
+    } catch (err: any) {
+      console.error("Erro na busca:", err);
+      setError("Não foi possível carregar os profissionais.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -36,21 +76,53 @@ export default function Explore() {
         const spec = params.specialty as string;
         setSearch(spec);
         fetchProfessionals(spec, 'specialty');
-    } else { fetchProfessionals(); }
+    } else {
+        fetchProfessionals();
+    }
   }, [params.specialty, fetchProfessionals]);
 
-  const handleSearch = () => { fetchProfessionals(search, 'name'); };
-  const clearSearch = () => { setSearch(''); fetchProfessionals('', 'name'); };
+  const handleSearch = () => {
+      fetchProfessionals(search, 'name');
+  };
+
+  const clearSearch = () => {
+      setSearch('');
+      fetchProfessionals('', 'name');
+  };
 
   const renderItem = ({ item, index }: { item: Professional, index: number }) => {
     const primaryUnit = item.health_units?.[0]?.name || 'Unidade não informada';
+
     return (
-      <TouchableOpacity style={styles.card} onPress={() => router.push({ pathname: '/book-appointment', params: { professional: JSON.stringify(item) } } as any)}>
-        <View style={styles.avatarPlaceholder}><Text style={styles.avatarText}>{item.user.name.charAt(0)}</Text></View>
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => {
+            router.push({
+                pathname: '/book-appointment',
+                params: { professional: JSON.stringify(item) }
+            } as any);
+        }}
+      >
+        {/* LÓGICA DA FOTO */}
+        {item.photo_url ? (
+            <Image
+                source={{ uri: item.photo_url }}
+                style={styles.avatarImage}
+                resizeMode="cover"
+            />
+        ) : (
+            <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarText}>{item.user.name.charAt(0)}</Text>
+            </View>
+        )}
+
         <View style={styles.info}>
           <Text style={styles.name}>{item.user.name}</Text>
           <Text style={styles.specialty}>{item.specialty}</Text>
-          <View style={styles.locationContainer}><Ionicons name="business-outline" size={14} color="#666" /><Text style={styles.hospital}>{primaryUnit}</Text></View>
+          <View style={styles.locationContainer}>
+            <Ionicons name="business-outline" size={14} color="#666" />
+            <Text style={styles.hospital}>{primaryUnit}</Text>
+          </View>
         </View>
         <Ionicons name="chevron-forward" size={24} color="#ccc" />
       </TouchableOpacity>
@@ -63,15 +135,51 @@ export default function Explore() {
         <Text style={styles.title}>Encontre um Especialista</Text>
         <View style={styles.searchContainer}>
           <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
-          <TextInput style={styles.searchInput} placeholder="Buscar por nome..." value={search} onChangeText={setSearch} onSubmitEditing={handleSearch} returnKeyType="search" />
-          {search.length > 0 && (<TouchableOpacity onPress={clearSearch}><Ionicons name="close-circle" size={20} color="#ccc" /></TouchableOpacity>)}
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Buscar por nome..."
+            value={search}
+            onChangeText={setSearch}
+            onSubmitEditing={handleSearch}
+            returnKeyType="search"
+          />
+          {search.length > 0 && (
+              <TouchableOpacity onPress={clearSearch}>
+                  <Ionicons name="close-circle" size={20} color="#ccc" />
+              </TouchableOpacity>
+          )}
         </View>
-        <Text style={{ color: '#fff', marginTop: 8 }}>{loading ? 'Buscando...' : `${professionals.length} resultados encontrados`}</Text>
+        <Text style={{ color: '#fff', marginTop: 8 }}>
+            {loading ? 'Buscando...' : `${professionals.length} resultados encontrados`}
+        </Text>
       </View>
+
       {error ? (
-          <View style={styles.center}><Text style={styles.errorText}>{error}</Text><TouchableOpacity onPress={() => fetchProfessionals(search, 'name')}><Text style={styles.retryButton}>Tentar novamente</Text></TouchableOpacity></View>
-      ) : loading ? (<View style={styles.center}><ActivityIndicator size="large" color="#2A9F85" /></View>) : (
-          <FlatList data={professionals} keyExtractor={(item, index) => String(item.professional_id || item.id || index)} contentContainerStyle={styles.listContent} renderItem={renderItem} ListEmptyComponent={() => (<View style={styles.center}><Text style={styles.emptyText}>Nenhum profissional encontrado.</Text><TouchableOpacity onPress={clearSearch}><Text style={{ color: '#2A9F85', marginTop: 10 }}>Limpar filtros</Text></TouchableOpacity></View>)} />
+          <View style={styles.center}>
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity onPress={() => fetchProfessionals(search, 'name')}>
+                  <Text style={styles.retryButton}>Tentar novamente</Text>
+              </TouchableOpacity>
+          </View>
+      ) : loading ? (
+          <View style={styles.center}>
+              <ActivityIndicator size="large" color="#2A9F85" />
+          </View>
+      ) : (
+          <FlatList
+            data={professionals}
+            keyExtractor={(item, index) => String(item.professional_id || item.id || index)}
+            contentContainerStyle={styles.listContent}
+            renderItem={renderItem}
+            ListEmptyComponent={() => (
+                <View style={styles.center}>
+                    <Text style={styles.emptyText}>Nenhum profissional encontrado.</Text>
+                    <TouchableOpacity onPress={clearSearch}>
+                        <Text style={{ color: '#2A9F85', marginTop: 10 }}>Limpar filtros</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+          />
       )}
     </View>
   );
@@ -87,8 +195,14 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 16, color: '#333' },
   listContent: { padding: 16 },
   card: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+
+  // Estilo do Avatar (Texto)
   avatarPlaceholder: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#E0F2F1', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
   avatarText: { color: '#2A9F85', fontSize: 20, fontWeight: 'bold' },
+
+  // Estilo do Avatar (Imagem)
+  avatarImage: { width: 50, height: 50, borderRadius: 25, marginRight: 16, backgroundColor: '#E0F2F1' },
+
   info: { flex: 1 },
   name: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 4 },
   specialty: { fontSize: 14, color: '#2A9F85', fontWeight: '600', marginBottom: 4 },

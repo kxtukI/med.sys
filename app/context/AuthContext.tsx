@@ -9,6 +9,8 @@ interface User {
   email: string;
   user_type: 'patient' | 'professional' | 'admin';
   phone?: string;
+  birth_date?: string;
+  photo_url?: string; // Adicionado campo de foto
 }
 
 interface AuthContextData {
@@ -17,6 +19,7 @@ interface AuthContextData {
   isLoading: boolean;
   signIn: (credentials: { identifier: string; password: string }) => Promise<void>;
   signOut: () => Promise<void>;
+  updateUser: (userData: User) => Promise<void>; // Nova função
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
@@ -34,6 +37,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       delete api.defaults.headers.common['Authorization'];
       setUser(null);
     }
+  };
+
+  // --- NOVA FUNÇÃO: Atualizar Usuário Localmente ---
+  const updateUser = async (newUserData: User) => {
+      try {
+          // Mescla os dados antigos com os novos para não perder info
+          const updated = { ...user, ...newUserData };
+          setUser(updated);
+          await SecureStore.setItemAsync('auth_user', JSON.stringify(updated));
+      } catch (error) {
+          console.log("Erro ao atualizar contexto:", error);
+      }
   };
 
   useEffect(() => {
@@ -89,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, signIn, signOut, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -23,14 +23,14 @@ export default function Welcome() {
             style={[styles.button, styles.loginButton]}
             onPress={() => router.push('/(auth)/login' as any)}
           >
-            <Text style={styles.loginText}>Log In</Text>
+            <Text style={styles.loginText}>Entrar</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.button, styles.signupButton]}
             onPress={() => router.push('/(auth)/signup' as any)}
           >
-            <Text style={styles.signupText}>Sign Up</Text>
+            <Text style={styles.signupText}>Cadastrar</Text>
           </TouchableOpacity>
         </View>
       </View>

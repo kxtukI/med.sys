@@ -32,11 +32,25 @@ export default function Login() {
 
     try {
       setLoading(true);
-      await signIn({ identifier, password });
+
+      // Remove pontos e traços do CPF antes de enviar
+      const cleanIdentifier = identifier.replace(/\D/g, '');
+
+      // Envia o identificador limpo (apenas números)
+      await signIn({ identifier: cleanIdentifier, password });
+
     } catch (error: any) {
+      console.log('Erro Login:', error);
       let msg = 'Verifique suas credenciais.';
-      if (error.message === 'acesso_negado_perfil') msg = 'Acesso exclusivo para Pacientes.';
-      else if (error.response?.status === 401) msg = 'CPF ou senha incorretos.';
+
+      if (error.message === 'acesso_negado_perfil') {
+        msg = 'Acesso exclusivo para Pacientes.';
+      } else if (error.response?.status === 401) {
+        msg = 'CPF ou senha incorretos.';
+      } else if (error.response?.data?.error) {
+        msg = error.response.data.error;
+      }
+
       Alert.alert('Falha no Login', msg);
     } finally {
       setLoading(false);
@@ -52,12 +66,15 @@ export default function Login() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Hello!</Text>
+        <Text style={styles.headerTitle}>Bem-vindo!</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.welcomeText}>Bem-Vindo</Text>
 
+        {/* MENSAGEM DE BOAS VINDAS */}
+        <Text style={styles.welcomeText}>Faça login para continuar</Text>
+
+        {/* INPUT CPF */}
         <View style={styles.inputContainer}>
           <Text style={styles.label}>CPF</Text>
           <TextInputMask
@@ -71,6 +88,7 @@ export default function Login() {
           />
         </View>
 
+        {/* INPUT SENHA */}
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Senha</Text>
           <View style={styles.passwordContainer}>
@@ -90,8 +108,17 @@ export default function Login() {
               />
             </TouchableOpacity>
           </View>
+
+          {/* LINK ESQUECEU SENHA */}
+          <TouchableOpacity
+            style={styles.forgotButton}
+            onPress={() => router.push('/(auth)/forgot-password')}
+          >
+            <Text style={styles.forgotText}>Esqueceu a senha?</Text>
+          </TouchableOpacity>
         </View>
 
+        {/* BOTÃO LOGIN */}
         <TouchableOpacity
           style={styles.loginButton}
           onPress={handleLogin}
@@ -100,9 +127,18 @@ export default function Login() {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Log In</Text>
+            <Text style={styles.buttonText}>Entrar</Text>
           )}
         </TouchableOpacity>
+
+        {/* LINK CADASTRAR-SE */}
+        <View style={styles.signupContainer}>
+          <Text style={styles.signupText}>Não tem conta? </Text>
+          <TouchableOpacity onPress={() => router.push('/(auth)/signup')}>
+            <Text style={styles.signupLink}>Cadastre-se</Text>
+          </TouchableOpacity>
+        </View>
+
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -128,14 +164,22 @@ const styles = StyleSheet.create({
     marginTop: 10
   },
   content: { padding: 24, paddingTop: 40 },
-  welcomeText: { fontSize: 22, fontWeight: 'bold', color: '#2A9F85', marginBottom: 30 },
+  welcomeText: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#2A9F85',
+    marginBottom: 30,
+    textAlign: 'center'
+  },
   inputContainer: { marginBottom: 20 },
-  label: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
+  label: { fontSize: 14, fontWeight: '600', marginBottom: 8, color: '#333' },
   input: {
     backgroundColor: '#E0F7FA',
     borderRadius: 30,
     height: 50,
-    paddingHorizontal: 20
+    paddingHorizontal: 20,
+    fontSize: 16,
+    color: '#333'
   },
   passwordContainer: {
     flexDirection: 'row',
@@ -145,14 +189,48 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     alignItems: 'center'
   },
-  passwordInput: { flex: 1 },
+  passwordInput: { flex: 1, fontSize: 16, color: '#333' },
+
+  // Estilos novos para Esqueceu a Senha
+  forgotButton: {
+    alignSelf: 'flex-end',
+    marginTop: 10,
+    paddingVertical: 5,
+  },
+  forgotText: {
+    color: '#2A9F85',
+    fontWeight: '600',
+    fontSize: 14
+  },
+
   loginButton: {
     backgroundColor: '#2A9F85',
     height: 55,
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20
+    marginTop: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3
   },
-  buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' }
+  buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+
+  // Estilos para rodapé de cadastro
+  signupContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 30,
+  },
+  signupText: {
+    color: '#666',
+    fontSize: 16,
+  },
+  signupLink: {
+    color: '#2A9F85',
+    fontSize: 16,
+    fontWeight: 'bold',
+  }
 });
