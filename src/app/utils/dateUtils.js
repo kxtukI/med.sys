@@ -150,9 +150,6 @@ export const isWithinProfessionalSchedule = async (professionalId, healthUnitId,
   }
 
   const scheduleData = schedule.toJSON ? schedule.toJSON() : schedule;
-  // LOG TEMPORÁRIO PARA DEBUG
-  // eslint-disable-next-line no-console
-  console.log('DEBUG scheduleData:', JSON.stringify(scheduleData));
 
   if (!scheduleData.startTime || !scheduleData.endTime) {
     return {

@@ -21,9 +21,6 @@ class AppointmentSlotService {
     }
 
     static async generateAvailableSlots(professionalId, healthUnitId, appointmentDate) {
-        // LOG TEMPORÁRIO PARA DEBUG
-        // eslint-disable-next-line no-console
-        console.log('DEBUG generateAvailableSlots:', { professionalId, healthUnitId, appointmentDate });
         try {
             let dateStr;
             let dayOfWeek;
@@ -58,17 +55,11 @@ class AppointmentSlotService {
             }
 
             const scheduleData = schedule.toJSON();
-            // LOG TEMPORÁRIO PARA DEBUG
-            // eslint-disable-next-line no-console
-            console.log('DEBUG scheduleData (slots):', JSON.stringify(scheduleData));
 
             const startTime = scheduleData.startTime;
             const endTime = scheduleData.endTime;
 
             if (!startTime || !endTime) {
-                // LOG TEMPORÁRIO PARA DEBUG
-                // eslint-disable-next-line no-console
-                console.log('ERRO: startTime ou endTime ausente', { startTime, endTime, scheduleData });
                 return {
                     success: false,
                     error: 'Horário não configurado corretamente',

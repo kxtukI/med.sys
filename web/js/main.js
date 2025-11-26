@@ -505,9 +505,9 @@ function setupPatientModalForm() {
 }
 
 async function loadMedicationsData() {
-    const tableBody = document.getElementById('medications-table-body');
-    if (!tableBody) return;
-    tableBody.innerHTML = '<tr><td colspan="4">Carregando...</td></tr>';
+    const grid = document.getElementById('medications-grid');
+    if (!grid) return;
+    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem;">Carregando...</div>';
 
     const nameFilter = document.getElementById('filter-name')?.value || '';
     const categoryFilter = document.getElementById('filter-category')?.value || '';
@@ -526,32 +526,50 @@ async function loadMedicationsData() {
         renderPaginationControls('medications');
 
         if (!medications || medications.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="4">Nenhum medicamento encontrado.</td></tr>';
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem;">Nenhum medicamento encontrado.</div>';
             return;
         }
 
-        tableBody.innerHTML = '';
+        grid.innerHTML = '';
         for (const med of medications) {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${med.name}</td>
-                <td>${med.manufacturer || 'N/A'}</td>
-                <td>${med.category || 'N/A'}</td>
-                <td class="actions">
-                    <button class="btn-icon btn-edit" aria-label="Editar" data-med-id="${med.id}">✏️</button>
-                    <button class="btn-icon btn-delete" aria-label="Deletar" data-med-id="${med.id}">🗑️</button>
-                </td>
+            const card = document.createElement('div');
+            card.className = 'medication-card';
+            card.setAttribute('data-med-id', med.id);
+            
+            // Renderizar imagem ou placeholder
+            let imageHtml = '';
+            if (med.photo_url) {
+                imageHtml = `<img src="${med.photo_url}" alt="${med.name}" class="medication-card-image" onerror="this.replaceWith(this.nextElementSibling)">`;
+            } else {
+                imageHtml = `<div class="medication-card-image-placeholder"></div>`;
+            }
+            
+            card.innerHTML = `
+                ${imageHtml}
+                <div class="medication-card-content">
+                    <div class="medication-card-name">${med.name}</div>
+                    <div class="medication-card-info">
+                        <div><span class="medication-card-info-label">Fabricante:</span> ${med.manufacturer || 'N/A'}</div>
+                        <div><span class="medication-card-info-label">Princípio Ativo:</span> ${med.active_ingredient || 'N/A'}</div>
+                        ${med.dosage ? `<div><span class="medication-card-info-label">Dosagem:</span> ${med.dosage}</div>` : ''}
+                    </div>
+                    <span class="medication-card-category">${med.category || 'Sem categoria'}</span>
+                    <div class="medication-card-actions">
+                        <button class="btn-icon btn-edit" aria-label="Editar" data-med-id="${med.id}">✏️</button>
+                        <button class="btn-icon btn-delete" aria-label="Deletar" data-med-id="${med.id}">🗑️</button>
+                    </div>
+                </div>
             `;
-            tableBody.appendChild(row);
+            grid.appendChild(card);
         }
 
-        setupDeleteListeners('medications-table-body', 'data-med-id', '/medications/', loadMedicationsData);
-        setupMedicationEditListeners('medications-table-body', 'data-med-id', '/medications/', 'medication-modal');
+        setupDeleteListeners('medications-grid', 'data-med-id', '/medications/', loadMedicationsData);
+        setupMedicationEditListeners('medications-grid', 'data-med-id', '/medications/', 'medication-modal');
         applyPermissions();
 
     } catch (error) {
         console.error("Erro ao carregar medicamentos:", error);
-        tableBody.innerHTML = '<tr><td colspan="4">Erro ao carregar dados.</td></tr>';
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #dc3545;">Erro ao carregar dados.</div>';
     }
 }
 
