@@ -4,3 +4,4 @@ dist/
 .prettierrc
 .env
 utils.md
+.expo/

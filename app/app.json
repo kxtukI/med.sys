@@ -22,7 +22,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.kxtuki.app"
     },
     "web": {
       "bundler": "metro",
@@ -35,6 +36,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b3762933-f49c-439c-a9a5-fa61594d6dd6"
+      }
     }
   }
 }

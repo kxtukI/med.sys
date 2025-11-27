@@ -9,6 +9,7 @@ Um sistema completo de gestão médica com funcionalidades para pacientes, profi
 - ✅ Gestão de Usuários (Admin, Profissional, Paciente)
 - ✅ Cadastro de Pacientes
 - ✅ Gestão de Profissionais de Saúde
+- ✅ Gestão de Horários e Turnos dos Profissionais
 - ✅ Catálogo de Medicamentos
 - ✅ Controle de Inventário de Medicamentos
 - ✅ Sistema de Reservas de Medicamentos
@@ -17,6 +18,8 @@ Um sistema completo de gestão médica com funcionalidades para pacientes, profi
 - ✅ Encaminhamentos 
 - ✅ Unidades de Saúde
 - ✅ Geolocalização de Unidades de Saúde
+- ✅ Assistente de Saúde com IA (Google Gemini)
+- ✅ Notificações Automáticas (Email e SMS via Twilio)
 - ✅ Validações com Yup
 - ✅ Upload de Fotos (Cloudinary)
 - ✅ Paginação em todas as listagens
@@ -32,6 +35,8 @@ Um sistema completo de gestão médica com funcionalidades para pacientes, profi
 - PostgreSQL (ou banco de dados compatível)
 - Conta no Cloudinary (opcional, para upload de fotos)
 - Conta no Twilio (opcional, para envio de SMS)
+- Chave de API Google Gemini (opcional, para assistente de IA)
+- Expo CLI (para rodar o aplicativo mobile)
 
 ### Instalação
 
@@ -42,11 +47,21 @@ cd med.sys
 ```
 
 2. **Instale as dependências**
+
+*Backend:*
 ```bash
 npm install
 ```
 
+*Mobile:*
+```bash
+cd app
+npm install
+```
+
 3. **Configure as variáveis de ambiente**
+
+*Backend:*
 ```bash
 cp .env.example .env
 ```
@@ -58,6 +73,10 @@ DATABASE_URL=postgresql://user:password@localhost:5432/med_sys
 
 # JWT
 JWT_SECRET=sua_chave_secreta_aqui
+
+# IA (Google Gemini)
+GEMINI_API_KEY=sua_chave_gemini
+GEMINI_MODEL=gemini-1.5-flash ou de sua preferência
 
 # Cloudinary (opcional)
 CLOUDINARY_NAME=seu_cloud_name
@@ -82,21 +101,21 @@ PORT=3000
 ```bash
 npm run migrate
 ```
-*Ou*
-```bash
-yarn migrate
-```
 
-5. **Inicie o servidor**
+5. **Inicie a aplicação**
+
+*Backend:*
 ```bash
 npm run dev
-```
-*Ou*
-```bash
-yarn dev
+# Servidor rodando em http://localhost:3000
 ```
 
-O servidor estará rodando em `http://localhost:3000`
+*Mobile:*
+```bash
+cd app
+npx expo start
+# Use o App Expo Go para escanear o QR Code
+```
 
 ---
 
@@ -184,19 +203,29 @@ Realiza login e retorna um token JWT (Login pode ser feito usando CPF e Email).
 ## 📊 Estrutura do Projeto
 
 ```
-src/
-├── app/
-│   ├── controllers/        # Lógica de negócio
-│   ├── models/             # Modelos do Sequelize
-│   ├── middlewares/        # Middlewares (auth, validation)
-│   └── utils/              # Funções auxiliares
-├── config/                 # Configurações
-├── database/
-│   ├── index.js           # Conexão com BD
-│   └── migrations/        # Migrações
-├── routes.js              # Rotas da API
-├── app.js                 # Configuração Express
-└── server.js              # Entrada da aplicação
+├── app/             # Mobile App (Expo/React Native)
+│ ├── app/           # Telas e Rotas (Expo Router)
+│ │ ├── (auth)/      # Fluxo de autenticação
+│ │ ├── (tabs)/      # Navegação por abas
+│ │ └── pharmacy/    # Telas de farmácia
+│ ├── components/    # Componentes reutilizáveis
+│ ├── context/       # Context API (Auth)
+│ └── services/      # Integração com API
+│
+├── src/             # Backend (Node.js/Express)
+│ ├── app/
+│ │ ├── controllers/ # Lógica de negócio
+│ │ ├── models/      # Modelos do Sequelize
+│ │ ├── middlewares/ # Middlewares (auth, validation)
+│ │ └── services/    # Serviços (Jobs, Email, SMS)
+│ ├── config/        # Configurações (DB, Auth)
+│ ├── database/      # Migrations e Seeds
+│ └── routes.js      # Rotas da API
+│
+└── web/             # Dashboard Web (HTML/JS)
+├── css/             # Estilos
+└── js/              # Lógica Dashboard
+
 ```
 
 ---
@@ -314,10 +343,13 @@ Todas as entidades possuem validações com **Yup**:
 - `health_units` - Unidades de saúde
 - `medications` - Medicamentos
 - `medication_inventory` - Estoque por unidade
-- `medication_reservations` - Reservas de medicamentos ⭐
+- `medication_reservations` - Reservas de medicamentos
 - `appointments` - Agendamentos
 - `medical_records` - Registros médicos
 - `referrals` - Encaminhamentos
+- `notifications` - Notificações (SMS/Email)
+- `professional_schedules` - Horários e turnos dos profissionais
+- `professional_health_units` - Associação Profissional x Unidade
 
 ---
 
